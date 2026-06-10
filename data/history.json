@@ -1,0 +1,22 @@
+[
+  {
+    "full_name": "jan Kowalski",
+    "dorm_id": 1,
+    "floor": "1",
+    "room": "1A",
+    "checkin": "2026-06-10",
+    "checkout": "2026-10-01",
+    "gender": "male",
+    "email": "",
+    "phone": "",
+    "id": 1,
+    "status": "active",
+    "created": "2026-06-09 10:34",
+    "telegram": "",
+    "contract_date": "",
+    "contract_end": "",
+    "contract_num": "",
+    "notes": "",
+    "eviction_date": "2026-06-09"
+  }
+]

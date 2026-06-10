@@ -1,0 +1,16 @@
+[
+  {
+    "first_name": "Roman",
+    "last_name": "Hontar",
+    "phone": "+380731573058",
+    "email": "roma.gontar2006@gmail.com",
+    "is_wsg": true,
+    "gender": "male",
+    "dorm_id": 1,
+    "checkin": "1000-06-05",
+    "checkout": "0777-07-11",
+    "id": 1,
+    "status": "confirmed",
+    "created": "2026-06-08 23:22"
+  }
+]

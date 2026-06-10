@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WSG Akademiki</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#f0f2f5;min-height:100vh}
+.app{width:100%;min-height:100vh;background:white;display:flex;flex-direction:column}
+.header{background:#1a3c5e;color:white;padding:16px 24px;display:flex;align-items:center;gap:12px}
+.header h1{font-size:20px;flex:1}
+.header p{font-size:12px;opacity:0.7;margin-top:2px}
+.lang-bar{display:flex;gap:4px}
+.lang-btn{padding:5px 10px;border:1px solid rgba(255,255,255,0.4);border-radius:6px;background:transparent;color:white;cursor:pointer;font-size:12px}
+.lang-btn.active{background:white;color:#1a3c5e;font-weight:bold}
+.nav{display:flex;overflow-x:auto;background:#fff;border-bottom:2px solid #e0e0e0;scrollbar-width:none;padding:0 8px}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{flex-shrink:0;padding:13px 16px;border:none;background:transparent;cursor:pointer;font-size:13px;color:#666;border-bottom:3px solid transparent;white-space:nowrap}
+.nav-btn.active{color:#1a3c5e;border-bottom-color:#1a3c5e;font-weight:bold}
+.content{flex:1;overflow-y:auto}
+.page{display:none;padding:20px 24px;max-width:900px;margin:0 auto;width:100%}
+.page.active{display:block}
+
+/* CHAT */
+#page-chat{display:none;flex-direction:column;height:calc(100vh - 112px);padding:0;max-width:100%}
+#page-chat.active{display:flex}
+.chat-top{padding:16px 24px;background:#f7f9fc;border-bottom:1px solid #e0e0e0}
+.chat-top h3{font-size:15px;color:#1a3c5e;font-weight:bold}
+.chat-top p{font-size:12px;color:#888;margin-top:3px}
+.messages{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:12px;max-width:800px;margin:0 auto;width:100%}
+.msg{max-width:75%;padding:12px 15px;border-radius:14px;font-size:14px;line-height:1.6}
+.msg.user{background:#1a3c5e;color:white;align-self:flex-end;border-bottom-right-radius:3px}
+.msg.bot{background:#f0f2f5;color:#333;align-self:flex-start;border-bottom-left-radius:3px}
+.chat-input-wrap{padding:14px 24px;border-top:1px solid #eee;background:white}
+.chat-input{display:flex;gap:10px;max-width:800px;margin:0 auto}
+.chat-input input{flex:1;padding:12px 16px;border:1.5px solid #ddd;border-radius:28px;outline:none;font-size:14px}
+.chat-input input:focus{border-color:#1a3c5e}
+.chat-input button{background:#1a3c5e;color:white;border:none;border-radius:50%;width:46px;height:46px;cursor:pointer;font-size:18px;flex-shrink:0}
+.quick-btns{display:flex;flex-wrap:wrap;gap:8px;max-width:800px;margin:0 auto 12px}
+.quick-btn{padding:7px 13px;border:1.5px solid #1a3c5e;border-radius:20px;background:white;color:#1a3c5e;cursor:pointer;font-size:12px}
+.quick-btn:hover{background:#1a3c5e;color:white}
+
+/* КАРТКИ */
+.dorms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
+.dorm-card{border:1px solid #e0e0e0;border-radius:14px;overflow:hidden;transition:box-shadow .2s}
+.dorm-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.1)}
+.dorm-card img{width:100%;height:170px;object-fit:cover}
+.dorm-info{padding:16px}
+.dorm-info h3{font-size:15px;color:#1a3c5e;margin-bottom:6px;font-weight:bold}
+.dorm-info p{font-size:12px;color:#666;margin-bottom:4px;line-height:1.5}
+.dorm-badges{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.badge{padding:3px 9px;border-radius:12px;font-size:11px;font-weight:bold}
+.badge.green{background:#d5f5e3;color:#1e8449}
+.badge.blue{background:#d6eaf8;color:#1a5276}
+.badge.orange{background:#fdebd0;color:#a04000}
+.btn{padding:10px 18px;border:none;border-radius:9px;cursor:pointer;font-size:13px;font-weight:bold;transition:opacity .2s}
+.btn:hover{opacity:0.85}
+.btn-primary{background:#1a3c5e;color:white;width:100%}
+.btn-danger{background:#c0392b;color:white}
+
+/* ФОРМИ */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:bold;color:#555;margin-bottom:5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:11px;border:1.5px solid #ddd;border-radius:9px;font-size:13px;outline:none;transition:border .2s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#1a3c5e}
+.form-group textarea{height:90px;resize:none}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.radio-group{display:flex;gap:14px;flex-wrap:wrap}
+.radio-group label{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:normal;color:#333}
+.section-title{font-size:18px;font-weight:bold;color:#1a3c5e;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid #e0e0e0}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.info-card{background:#f7f9fc;border-radius:12px;padding:16px;border-left:4px solid #1a3c5e}
+.info-card h4{font-size:14px;color:#1a3c5e;margin-bottom:8px;font-weight:bold}
+.info-card p{font-size:13px;color:#555;line-height:1.7}
+.status-badge{padding:4px 10px;border-radius:12px;font-size:11px;font-weight:bold;display:inline-block}
+.status-pending{background:#fef9e7;color:#d4ac0d}
+.status-confirmed{background:#d5f5e3;color:#1e8449}
+.status-rejected{background:#fadbd8;color:#c0392b}
+.status-reserve{background:#e8daef;color:#6c3483}
+.status-received{background:#d6eaf8;color:#1a5276}
+.status-inprogress{background:#fdebd0;color:#a04000}
+.status-solved{background:#d5f5e3;color:#1e8449}
+.ticket-card{border:1px solid #e0e0e0;border-radius:10px;padding:14px;margin-bottom:10px}
+.alert{padding:13px;border-radius:9px;font-size:13px;margin-bottom:14px}
+.alert-success{background:#d5f5e3;color:#1e8449}
+.alert-error{background:#fadbd8;color:#c0392b}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div style="flex:1">
+      <h1>🏠 WSG Akademiki</h1>
+      <p>Cyfrowy administrator akademików WSG Bydgoszcz</p>
+    </div>
+    <div class="lang-bar">
+      <button class="lang-btn" onclick="setLang('uk',this)">УКР</button>
+      <button class="lang-btn active" onclick="setLang('pl',this)">POL</button>
+      <button class="lang-btn" onclick="setLang('en',this)">ENG</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="showPage('dorms',this)">🏢 <span data-t="nav_dorms">Akademiki</span></button>
+    <button class="nav-btn" onclick="showPage('reserve',this)">🏠 <span data-t="nav_reserve">Rezerwacja</span></button>
+    <button class="nav-btn" onclick="showPage('ticket',this)">⚠️ <span data-t="nav_problem">Problem</span></button>
+    <button class="nav-btn" onclick="showPage('mytickets',this)">📋 <span data-t="nav_mytickets">Moje zgłoszenia</span></button>
+    <button class="nav-btn" onclick="showPage('info',this)">ℹ️ <span data-t="nav_info">Informacje</span></button>
+    <button class="nav-btn" onclick="showPage('chat',this)">🤖 <span data-t="nav_chat">Asystent AI</span></button>
+  </div>
+
+  <div class="content">
+
+    <!-- ГУРТОЖИТКИ -->
+    <div class="page active" id="page-dorms">
+      <div class="section-title" data-t="dorms_title">Nasze akademiki</div>
+      <div class="dorms-grid" id="dorms-list">Ładowanie...</div>
+    </div>
+
+    <!-- РЕЗЕРВАЦІЯ -->
+    <div class="page" id="page-reserve">
+      <div class="section-title" data-t="reserve_title">Rezerwacja miejsca</div>
+      <div id="reserve-alert"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label data-t="form_firstname">Imię</label>
+          <input type="text" id="r-firstname" placeholder="Jan">
+        </div>
+        <div class="form-group">
+          <label data-t="form_lastname">Nazwisko</label>
+          <input type="text" id="r-lastname" placeholder="Kowalski">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label data-t="form_phone">Telefon</label>
+          <input type="text" id="r-phone" placeholder="+48 000 000 000">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="r-email" placeholder="jan@example.com">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label data-t="form_student_type">Typ studenta</label>
+          <div class="radio-group">
+            <label><input type="radio" name="wsg" value="true" checked> <span data-t="form_wsg_yes">Student WSG</span></label>
+            <label><input type="radio" name="wsg" value="false"> <span data-t="form_wsg_no">Inny</span></label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-t="form_gender">Płeć</label>
+          <div class="radio-group">
+            <label><input type="radio" name="gender" value="male" checked> <span data-t="form_male">Mężczyzna</span></label>
+            <label><input type="radio" name="gender" value="female"> <span data-t="form_female">Kobieta</span></label>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label data-t="form_dorm">Akademik</label>
+        <select id="r-dorm"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label data-t="form_checkin">Data przyjazdu</label>
+          <input type="date" id="r-checkin">
+        </div>
+        <div class="form-group">
+          <label data-t="form_checkout">Data wyjazdu</label>
+          <input type="date" id="r-checkout">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="submitReservation()" data-t="form_submit">Wyślij rezerwację</button>
+    </div>
+
+    <!-- ПРОБЛЕМА -->
+    <div class="page" id="page-ticket">
+      <div class="section-title" data-t="ticket_title">Zgłoś problem</div>
+      <div id="ticket-alert"></div>
+      <div class="form-group">
+        <label data-t="form_dorm">Akademik</label>
+        <select id="t-dorm"></select>
+      </div>
+      <div class="form-group">
+        <label data-t="form_room_opt">Numer pokoju (opcjonalnie)</label>
+        <input type="text" id="t-room" placeholder="np. 204">
+      </div>
+      <div class="form-group">
+        <label data-t="form_desc">Opis problemu</label>
+        <textarea id="t-desc" placeholder="Opisz problem szczegółowo..."></textarea>
+      </div>
+      <div class="form-group">
+        <label data-t="form_photo_opt">Link do zdjęcia (opcjonalnie)</label>
+        <input type="text" id="t-photo" placeholder="https://...">
+      </div>
+      <button class="btn btn-primary" style="background:#c0392b" onclick="submitTicket()" data-t="ticket_submit">Wyślij zgłoszenie</button>
+    </div>
+
+    <!-- МОЇ ЗАЯВКИ -->
+    <div class="page" id="page-mytickets">
+      <div class="section-title" data-t="my_title">Moje zgłoszenia</div>
+      <div class="form-group">
+        <label data-t="my_email_label">Wpisz email aby zobaczyć zgłoszenia</label>
+        <div style="display:flex;gap:8px">
+          <input type="email" id="my-email" placeholder="jan@example.com" style="flex:1;padding:11px;border:1.5px solid #ddd;border-radius:9px;outline:none;font-size:13px">
+          <button class="btn btn-primary" style="width:auto;padding:11px 18px" onclick="loadMyTickets()" data-t="my_search">Szukaj</button>
+        </div>
+      </div>
+      <div id="my-results"></div>
+    </div>
+
+    <!-- ІНФОРМАЦІЯ -->
+    <div class="page" id="page-info">
+      <div class="section-title" data-t="info_title">Informacje</div>
+      <div class="info-grid">
+        <div class="info-card">
+          <h4>📍 <span data-t="info_office">Biuro zakwaterowania</span></h4>
+          <p data-t="info_office_desc">Budynek H, pokój 008<br>Pon–Pt: 08:00–15:00<br>Email: dormitory@byd.pl</p>
+        </div>
+        <div class="info-card">
+          <h4>💰 <span data-t="info_prices">Cennik</span></h4>
+          <p data-t="info_prices_desc">Pokój 2-osobowy: 850 PLN/mies.<br>Pokój 3-osobowy: 750 PLN/mies.<br>Kaucja: 850 PLN</p>
+        </div>
+        <div class="info-card">
+          <h4>📋 <span data-t="info_rules">Regulamin</span></h4>
+          <p data-t="info_rules_desc">• Cisza nocna: 22:00–06:00<br>• Opłata do 10. każdego miesiąca<br>• Goście: 08:00–22:00<br>• Zakaz palenia, alkoholu, zwierząt</p>
+        </div>
+        <div class="info-card">
+          <h4>📝 <span data-t="info_checkin">Zakwaterowanie WSG</span></h4>
+          <p data-t="info_checkin_desc">1. Budynek C, pok. 007 — umowa z uczelnią<br>2. Budynek H, pok. 008 — umowa najmu<br>3. Odbiór kluczy</p>
+        </div>
+        <div class="info-card">
+          <h4>❓ FAQ</h4>
+          <p data-t="info_faq">Rezerwacja: min. 2 tygodnie przed przyjazdem.<br>Wymagane: paszport + wiza, imię, nazwisko, wiek, płeć.<br>Email: dormitory@byd.pl</p>
+        </div>
+        <div class="info-card">
+          <h4>🤖 <span data-t="info_ai_title">Asystent AI</span></h4>
+          <p data-t="info_ai_desc">Masz pytania? Nasz AI odpowie na wszystkie pytania dotyczące akademików, zasad, rezerwacji i więcej. Dostępny 24/7!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI ЧАТ -->
+    <div class="page" id="page-chat">
+      <div class="chat-top">
+        <h3>🤖 <span data-t="chat_title">Asystent AI — WSG Akademiki</span></h3>
+        <p data-t="chat_subtitle">Odpowiem na wszystkie pytania dotyczące akademików, rezerwacji, zasad i więcej. Dostępny 24/7</p>
+      </div>
+      <div class="messages" id="chat-messages">
+        <div class="msg bot" id="welcome-msg">Cześć! Jestem asystentem akademików WSG. Jak mogę pomóc? 😊</div>
+      </div>
+      <div class="chat-input-wrap">
+        <div class="quick-btns" id="quick-btns"></div>
+        <div class="chat-input">
+          <input type="text" id="chat-input" placeholder="Napisz pytanie..." onkeypress="if(event.key==='Enter')sendChat()">
+          <button onclick="sendChat()">➤</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const T = {
+  pl:{
+    nav_dorms:"Akademiki",nav_reserve:"Rezerwacja",nav_problem:"Problem",nav_mytickets:"Moje zgłoszenia",nav_info:"Informacje",nav_chat:"Asystent AI",
+    dorms_title:"Nasze akademiki",reserve_title:"Rezerwacja miejsca",ticket_title:"Zgłoś problem",my_title:"Moje zgłoszenia",info_title:"Informacje",
+    form_firstname:"Imię (łacińskie litery)",form_lastname:"Nazwisko (łacińskie litery)",form_phone:"Telefon",form_student_type:"Typ studenta",
+    form_wsg_yes:"Student WSG",form_wsg_no:"Inny student",form_gender:"Płeć",form_male:"Mężczyzna",form_female:"Kobieta",
+    form_dorm:"Akademik",form_checkin:"Data przyjazdu",form_checkout:"Data wyjazdu",form_submit:"Wyślij rezerwację",
+    form_room_opt:"Numer pokoju (opcjonalnie)",form_desc:"Opis problemu",form_photo_opt:"Link do zdjęcia (opcjonalnie)",
+    ticket_submit:"Wyślij zgłoszenie",my_email_label:"Wpisz email aby zobaczyć zgłoszenia",my_search:"Szukaj",
+    info_office:"Biuro zakwaterowania",info_office_desc:"Budynek H, pokój 008<br>Pon–Pt: 08:00–15:00<br>Email: dormitory@byd.pl",
+    info_prices:"Cennik",info_prices_desc:"Pokój 2-osobowy: 850 PLN/mies.<br>Pokój 3-osobowy: 750 PLN/mies.<br>Kaucja: 850 PLN",
+    info_rules:"Regulamin",info_rules_desc:"• Cisza nocna: 22:00–06:00<br>• Opłata do 10. każdego miesiąca<br>• Goście: 08:00–22:00<br>• Zakaz palenia, alkoholu, zwierząt",
+    info_checkin:"Zakwaterowanie WSG",info_checkin_desc:"1. Budynek C, pok. 007 — umowa z uczelnią<br>2. Budynek H, pok. 008 — umowa najmu<br>3. Odbiór kluczy",
+    info_faq:"Rezerwacja: min. 2 tygodnie przed przyjazdem.<br>Wymagane: paszport + wiza, imię, nazwisko, wiek, płeć.<br>Email: dormitory@byd.pl",
+    info_ai_title:"Asystent AI",info_ai_desc:"Masz pytania? Nasz AI odpowie na wszystkie pytania dotyczące akademików. Dostępny 24/7!",
+    chat_title:"Asystent AI — WSG Akademiki",chat_subtitle:"Odpowiem na wszystkie pytania dotyczące akademików, rezerwacji, zasad i więcej. Dostępny 24/7",
+    free_places:"Wolne miejsca",book_btn:"Zarezerwuj",
+    status_pending:"Oczekuje",status_confirmed:"Potwierdzone",status_rejected:"Odrzucone",status_reserve:"Lista rezerwowa",
+    status_received:"Otrzymano",status_inprogress:"W trakcie",status_solved:"Rozwiązano",
+    reserve_success:"✅ Rezerwacja wysłana! Czekaj na potwierdzenie.",ticket_success:"✅ Zgłoszenie wysłane!",
+    welcome_msg:"Cześć! Jestem asystentem akademików WSG. Jak mogę pomóc? 😊",
+    no_results:"Brak zgłoszeń dla tego emaila.",reservations_title:"Rezerwacje",problems_title:"Zgłoszenia problemów",
+    quick:["Jakie są ceny?","Jak zarezerwować?","Gdzie jest biuro?","Jakie są zasady?","Wolne miejsca"]
+  },
+  uk:{
+    nav_dorms:"Гуртожитки",nav_reserve:"Резервація",nav_problem:"Проблема",nav_mytickets:"Мої заявки",nav_info:"Інформація",nav_chat:"AI Помічник",
+    dorms_title:"Наші гуртожитки",reserve_title:"Резервація місця",ticket_title:"Повідомити про проблему",my_title:"Мої заявки",info_title:"Інформація",
+    form_firstname:"Ім'я (латинські літери)",form_lastname:"Прізвище (латинські літери)",form_phone:"Телефон",form_student_type:"Тип студента",
+    form_wsg_yes:"Студент WSG",form_wsg_no:"Інший студент",form_gender:"Стать",form_male:"Чоловік",form_female:"Жінка",
+    form_dorm:"Гуртожиток",form_checkin:"Дата заїзду",form_checkout:"Дата виїзду",form_submit:"Надіслати резервацію",
+    form_room_opt:"Номер кімнати (необов'язково)",form_desc:"Опис проблеми",form_photo_opt:"Посилання на фото (необов'язково)",
+    ticket_submit:"Надіслати заявку",my_email_label:"Введіть email щоб побачити заявки",my_search:"Шукати",
+    info_office:"Адміністрація",info_office_desc:"Будівля H, кімната 008<br>Пн–Пт: 08:00–15:00<br>Email: dormitory@byd.pl",
+    info_prices:"Ціни",info_prices_desc:"Кімната на 2 особи: 850 PLN/міс.<br>Кімната на 3 особи: 750 PLN/міс.<br>Депозит: 850 PLN",
+    info_rules:"Правила",info_rules_desc:"• Тиша: 22:00–06:00<br>• Оплата до 10 числа<br>• Гості: 08:00–22:00<br>• Заборонено паління, алкоголь, тварини",
+    info_checkin:"Процес заселення (WSG)",info_checkin_desc:"1. Будівля C, кімн. 007 — договір з університетом<br>2. Будівля H, кімн. 008 — договір проживання<br>3. Отримання ключів",
+    info_faq:"Резервація: мін. 2 тижні до приїзду.<br>Потрібно: паспорт + віза, ім'я, прізвище, вік, стать.<br>Email: dormitory@byd.pl",
+    info_ai_title:"AI Помічник",info_ai_desc:"Маєш питання? Наш AI відповість на всі питання про гуртожитки. Доступний 24/7!",
+    chat_title:"AI Помічник — Гуртожитки WSG",chat_subtitle:"Відповім на всі питання про гуртожитки, резервацію, правила та інше. Доступний 24/7",
+    free_places:"Вільних місць",book_btn:"Забронювати",
+    status_pending:"Очікує",status_confirmed:"Підтверджено",status_rejected:"Відхилено",status_reserve:"Резервний список",
+    status_received:"Отримано",status_inprogress:"В роботі",status_solved:"Вирішено",
+    reserve_success:"✅ Резервацію надіслано!",ticket_success:"✅ Заявку надіслано!",
+    welcome_msg:"Привіт! Я помічник гуртожитків WSG. Чим можу допомогти? 😊",
+    no_results:"Заявок не знайдено.",reservations_title:"Резервації",problems_title:"Заявки про проблеми",
+    quick:["Які ціни?","Як забронювати?","Де адміністрація?","Які правила?","Вільні місця"]
+  },
+  en:{
+    nav_dorms:"Dormitories",nav_reserve:"Reservation",nav_problem:"Problem",nav_mytickets:"My Tickets",nav_info:"Information",nav_chat:"AI Assistant",
+    dorms_title:"Our Dormitories",reserve_title:"Place Reservation",ticket_title:"Report a Problem",my_title:"My Tickets",info_title:"Information",
+    form_firstname:"First name (Latin letters)",form_lastname:"Last name (Latin letters)",form_phone:"Phone",form_student_type:"Student type",
+    form_wsg_yes:"WSG Student",form_wsg_no:"Other student",form_gender:"Gender",form_male:"Male",form_female:"Female",
+    form_dorm:"Dormitory",form_checkin:"Check-in date",form_checkout:"Check-out date",form_submit:"Send reservation",
+    form_room_opt:"Room number (optional)",form_desc:"Problem description",form_photo_opt:"Photo link (optional)",
+    ticket_submit:"Send report",my_email_label:"Enter email to see your tickets",my_search:"Search",
+    info_office:"Administration Office",info_office_desc:"Building H, room 008<br>Mon–Fri: 08:00–15:00<br>Email: dormitory@byd.pl",
+    info_prices:"Prices",info_prices_desc:"Double room: 850 PLN/mo<br>Triple room: 750 PLN/mo<br>Deposit: 850 PLN",
+    info_rules:"Rules",info_rules_desc:"• Quiet hours: 22:00–06:00<br>• Payment by 10th of month<br>• Visitors: 08:00–22:00<br>• No smoking, alcohol, pets",
+    info_checkin:"Check-in Process (WSG)",info_checkin_desc:"1. Building C, room 007 — university contract<br>2. Building H, room 008 — accommodation contract<br>3. Receive keys",
+    info_faq:"Reservation: min. 2 weeks before arrival.<br>Required: passport + visa, name, age, gender.<br>Email: dormitory@byd.pl",
+    info_ai_title:"AI Assistant",info_ai_desc:"Have questions? Our AI will answer everything about dormitories. Available 24/7!",
+    chat_title:"AI Assistant — WSG Dormitories",chat_subtitle:"I'll answer all questions about dormitories, reservations, rules and more. Available 24/7",
+    free_places:"Free places",book_btn:"Book",
+    status_pending:"Pending",status_confirmed:"Confirmed",status_rejected:"Rejected",status_reserve:"Waiting list",
+    status_received:"Received",status_inprogress:"In progress",status_solved:"Solved",
+    reserve_success:"✅ Reservation sent!",ticket_success:"✅ Report sent!",
+    welcome_msg:"Hi! I'm the WSG Dormitory Assistant. How can I help? 😊",
+    no_results:"No tickets found.",reservations_title:"Reservations",problems_title:"Problem Reports",
+    quick:["What are the prices?","How to reserve?","Where is the office?","What are the rules?","Free places"]
+  }
+};
+
+let lang='pl', dorms=[];
+function t(k){return T[lang][k]||k;}
+
+function setLang(l,btn){
+  lang=l;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('[data-t]').forEach(el=>{
+    const k=el.getAttribute('data-t');
+    if(T[lang][k])el.innerHTML=T[lang][k];
+  });
+  document.getElementById('welcome-msg').textContent=t('welcome_msg');
+  renderQuickBtns();
+  renderDorms();
+}
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function renderQuickBtns(){
+  const qs=T[lang].quick||[];
+  document.getElementById('quick-btns').innerHTML=qs.map(q=>`<button class="quick-btn" onclick="askQuick('${q}')">${q}</button>`).join('');
+}
+
+function askQuick(q){
+  document.getElementById('chat-input').value=q;
+  sendChat();
+}
+
+async function loadDorms(){
+  const res=await fetch('/api/dorms');
+  dorms=await res.json();
+  ['r-dorm','t-dorm'].forEach(id=>{
+    const sel=document.getElementById(id);
+    dorms.forEach(d=>{const o=document.createElement('option');o.value=d.id;o.textContent=d.name;sel.appendChild(o);});
+  });
+  renderDorms();
+  renderQuickBtns();
+}
+
+function renderDorms(){
+  document.getElementById('dorms-list').innerHTML=dorms.map(d=>`
+    <div class="dorm-card">
+      <img src="${d.photo}" alt="${d.name}">
+      <div class="dorm-info">
+        <h3>${d.name}</h3>
+        <p>📍 ${d.distance}</p>
+        <p>${d.description}</p>
+        <div class="dorm-badges">
+          <span class="badge blue">💰 ${d.price_double} PLN</span>
+          <span class="badge ${d.free_places>0?'green':'orange'}">${t('free_places')}: ${d.free_places}</span>
+        </div>
+        <button class="btn btn-primary" onclick="goReserve(${d.id})">${t('book_btn')}</button>
+      </div>
+    </div>`).join('');
+}
+
+function goReserve(id){
+  document.querySelectorAll('.nav-btn')[1].click();
+  setTimeout(()=>{document.getElementById('r-dorm').value=id;},100);
+}
+
+async function submitReservation(){
+  const fn=document.getElementById('r-firstname').value.trim();
+  const ln=document.getElementById('r-lastname').value.trim();
+  const phone=document.getElementById('r-phone').value.trim();
+  const email=document.getElementById('r-email').value.trim();
+  const dorm=document.getElementById('r-dorm').value;
+  const checkin=document.getElementById('r-checkin').value;
+  const checkout=document.getElementById('r-checkout').value;
+  const isWsg=document.querySelector('input[name="wsg"]:checked').value==='true';
+  const gender=document.querySelector('input[name="gender"]:checked').value;
+  if(!fn||!ln||!phone||!email||!dorm||!checkin||!checkout){alert('Wypełnij wszystkie pola!');return;}
+  await fetch('/api/reservations',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({first_name:fn,last_name:ln,phone,email,is_wsg:isWsg,gender,dorm_id:parseInt(dorm),checkin,checkout})});
+  document.getElementById('reserve-alert').innerHTML=`<div class="alert alert-success">${t('reserve_success')}</div>`;
+  setTimeout(()=>document.getElementById('reserve-alert').innerHTML='',4000);
+}
+
+async function submitTicket(){
+  const dorm=document.getElementById('t-dorm').value;
+  const room=document.getElementById('t-room').value;
+  const desc=document.getElementById('t-desc').value.trim();
+  const photo=document.getElementById('t-photo').value;
+  if(!dorm||!desc){alert('Wypełnij wymagane pola!');return;}
+  await fetch('/api/tickets',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({dorm_id:parseInt(dorm),room,description:desc,photo_url:photo})});
+  document.getElementById('ticket-alert').innerHTML=`<div class="alert alert-success">${t('ticket_success')}</div>`;
+  document.getElementById('t-desc').value='';document.getElementById('t-room').value='';document.getElementById('t-photo').value='';
+  setTimeout(()=>document.getElementById('ticket-alert').innerHTML='',4000);
+}
+
+async function loadMyTickets(){
+  const email=document.getElementById('my-email').value.trim();
+  if(!email)return;
+  const res=await fetch(`/api/my-tickets?email=${email}`);
+  const data=await res.json();
+  const sc={pending:'status-pending',confirmed:'status-confirmed',rejected:'status-rejected',reserve:'status-reserve',received:'status-received',inprogress:'status-inprogress',solved:'status-solved'};
+  let html='';
+  if(data.reservations.length){
+    html+=`<div class="section-title" style="font-size:15px;margin-top:10px">${t('reservations_title')}</div>`;
+    html+=data.reservations.map(r=>`<div class="ticket-card"><h4>#${r.id} — ${r.checkin} → ${r.checkout}</h4><p style="font-size:12px;color:#666;margin:4px 0">Akademik ID: ${r.dorm_id}</p><span class="status-badge ${sc[r.status]||''}">${t('status_'+r.status)||r.status}</span></div>`).join('');
+  }
+  if(data.tickets.length){
+    html+=`<div class="section-title" style="font-size:15px;margin-top:10px">${t('problems_title')}</div>`;
+    html+=data.tickets.map(tk=>`<div class="ticket-card"><h4>#${tk.id} — ${tk.description.substring(0,60)}...</h4><span class="status-badge ${sc[tk.status]||''}">${t('status_'+tk.status)||tk.status}</span></div>`).join('');
+  }
+  if(!html)html=`<p style="color:#999;font-size:13px;margin-top:10px">${t('no_results')}</p>`;
+  document.getElementById('my-results').innerHTML=html;
+}
+
+async function sendChat(){
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim();
+  if(!text)return;
+  addMsg(text,'user');input.value='';
+  const typing=addMsg('...','bot');
+  try{
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,language:lang})});
+    const data=await res.json();
+    typing.remove();addMsg(data.reply,'bot');
+  }catch(e){typing.remove();addMsg('Błąd połączenia 😢','bot');}
+}
+
+function addMsg(text,type){
+  const div=document.createElement('div');div.className='msg '+type;div.textContent=text;
+  const msgs=document.getElementById('chat-messages');msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+loadDorms();
+</script>
+</body>
+</html>

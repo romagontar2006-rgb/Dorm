@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "name": "ul. Czarna Droga 41",
+    "rooms": 8,
+    "total_places": 81,
+    "free_places": 74,
+    "price_double": 850,
+    "price_triple": 750,
+    "distance": "15 min pieszo do WSG",
+    "description": "Największy akademik. 5 pokoi 2-osobowych na mieszkanie, wspólna kuchnia i 2 łazienki.",
+    "photo": "https://placehold.co/400x200/1a3c5e/white?text=Czarna+Droga+41"
+  },
+  {
+    "id": 2,
+    "name": "ul. Sienkiewicza 17",
+    "rooms": 2,
+    "total_places": 21,
+    "free_places": 5,
+    "price_double": 850,
+    "price_triple": 750,
+    "distance": "10 min pieszo do WSG",
+    "description": "Kameralny akademik w centrum miasta.",
+    "photo": "https://placehold.co/400x200/1a3c5e/white?text=Sienkiewicza+17"
+  },
+  {
+    "id": 3,
+    "name": "ul. Pomorska 4",
+    "rooms": 1,
+    "total_places": 4,
+    "free_places": 1,
+    "price_double": 850,
+    "price_triple": 750,
+    "distance": "20 min pieszo do WSG",
+    "description": "Małe mieszkanie studenckie.",
+    "photo": "https://placehold.co/400x200/1a3c5e/white?text=Pomorska+4"
+  },
+  {
+    "id": 4,
+    "name": "ul. Zduny 13",
+    "rooms": 5,
+    "total_places": 23,
+    "free_places": 22,
+    "price_double": 950,
+    "price_triple": 750,
+    "distance": "10 min pieszo do WSG",
+    "description": "Komfortowy akademik z dobrą lokalizacją.",
+    "photo": "https://placehold.co/400x200/1a3c5e/white?text=Zduny+13"
+  },
+  {
+    "id": 5,
+    "name": "ul. Wieśniacza 30",
+    "rooms": 4,
+    "total_places": 14,
+    "free_places": 4,
+    "price_double": 950,
+    "price_triple": 750,
+    "distance": "10 min samochodem do WSG",
+    "description": "Spokojny akademik poza centrum.",
+    "photo": "https://placehold.co/400x200/1a3c5e/white?text=Wieśniacza+30"
+  }
+]

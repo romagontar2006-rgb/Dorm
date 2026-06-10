@@ -1,0 +1,12 @@
+[
+  {
+    "dorm_id": 2,
+    "room": "f2B",
+    "description": "roma",
+    "photo_url": "https://www.google.com/imgres?q=kalkulator&imgurl=https%3A%2F%2Fsynchronik.pl%2Fuserdata%2Fpublic%2Fgfx%2F33018%2FSDC-333X-BK-Kalkulator-Eleven-SDC-333X-Czarny.jpg&imgrefurl=https%3A%2F%2Fsynchronik.pl%2Fpl%2Fp%2FKalkulator-Eleven-SDC-333X-Czarny%2F37119%3Fsrsltid%3DAfmBOoolQcbZMoBlgcr5_MdGJJe282aLZx0561CkyZsvzZO-lz0gPw2r&docid=RF1P-p85pggzlM&tbnid=K2MM_9Ywda6FAM&vet=12ahUKEwiC2uO4yviUAxXpLBAIHcLpNXoQnPAOegQIMhAA..i&w=1000&h=1000&hcb=2&ved=2ahUKEwiC2uO4yviUAxXpLBAIHcLpNXoQnPAOegQIMhAA",
+    "id": 1,
+    "status": "solved",
+    "created": "2026-06-08 23:25",
+    "admin_comment": ""
+  }
+]

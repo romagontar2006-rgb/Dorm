@@ -1,0 +1,32 @@
+[
+  {
+    "date": "2026-06-11",
+    "time": "",
+    "text": "поїхтаи",
+    "done": false,
+    "color": "blue",
+    "type": "work",
+    "id": 3,
+    "created": "2026-06-09 23:13"
+  },
+  {
+    "date": "2026-06-10",
+    "time": "12:00",
+    "text": "поїхати на машині",
+    "done": true,
+    "color": "yellow",
+    "type": "work",
+    "id": 2,
+    "created": "2026-06-10 09:59"
+  },
+  {
+    "date": "2026-06-26",
+    "time": "",
+    "text": "агпвагееа",
+    "done": false,
+    "color": "blue",
+    "type": "work",
+    "id": 3,
+    "created": "2026-06-10 09:59"
+  }
+]
