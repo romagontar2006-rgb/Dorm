@@ -10,7 +10,7 @@ import database as db
 import os, shutil, uuid
 
 app = FastAPI()
-client = Groq(api_key="GROQ_API_KEY")
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 ADMIN_PASSWORD = "1111"
 UPLOAD_DIR = "static/uploads"
