@@ -22,7 +22,7 @@ def _save(name, data):
         "name": name,
         "data": data,
         "updated_at": datetime.now().isoformat()
-    }).execute()
+    }, on_conflict="name").execute()
 
 
 def _load_dict(name):
