@@ -16,6 +16,8 @@ def _load(name):
 
 
 def _save(name, data):
+    print("SAVE CALLED:", name)
+
     supabase.table("app_data").upsert({
         "name": name,
         "data": data,
