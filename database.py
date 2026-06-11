@@ -1,30 +1,41 @@
-import json, os
+import os
 from datetime import datetime
+from supabase import create_client
 
-DATA_DIR = "data"
-os.makedirs(DATA_DIR, exist_ok=True)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 
 def _load(name):
-    path = f"{DATA_DIR}/{name}.json"
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+    result = supabase.table("app_data").select("data").eq("name", name).execute()
+    if result.data:
+        return result.data[0]["data"]
     return []
 
+
 def _save(name, data):
-    with open(f"{DATA_DIR}/{name}.json", "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    supabase.table("app_data").upsert({
+        "name": name,
+        "data": data,
+        "updated_at": datetime.now().isoformat()
+    }).execute()
+
 
 def _load_dict(name):
-    path = f"{DATA_DIR}/{name}.json"
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+    result = supabase.table("app_data").select("data").eq("name", name).execute()
+    if result.data:
+        return result.data[0]["data"]
     return {}
 
+
 def _save_dict(name, data):
-    with open(f"{DATA_DIR}/{name}.json", "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    supabase.table("app_data").upsert({
+        "name": name,
+        "data": data,
+        "updated_at": datetime.now().isoformat()
+    }).execute()
 
 # ────────────────────────────────────────────
 # СТРУКТУРА КІМНАТ
