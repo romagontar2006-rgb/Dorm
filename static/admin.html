@@ -1197,47 +1197,62 @@ function renderResidents(){
   const df=document.getElementById('dorm-filter2').value;
   let html='';
   const dormsToShow=df?dorms.filter(d=>d.id==df):dorms;
+
   dormsToShow.forEach(dorm=>{
     const structure=roomsStructure[dorm.id]||{};
     if(!Object.keys(structure).length)return;
+
     html+=`<div class="dorm-section"><div class="dorm-section-header">🏢 ${dorm.name}</div>`;
+
     Object.entries(structure).forEach(([floor,rooms])=>{
       html+=`<div class="floor-section"><div class="floor-title">Mieszkanie / Sekcja: ${floor}</div><div class="rooms-grid">`;
+
       Object.entries(rooms).forEach(([roomName,info])=>{
         const roomRes=residents.filter(r=>r.dorm_id==dorm.id&&String(r.floor)==String(floor)&&r.room===roomName&&r.status==='active');
         const filtered=roomRes.filter(r=>(r.full_name||'').toLowerCase().includes(q));
-        const occupied=roomRes.length;
-        const full=occupied>=info.capacity;
+        const roomReservations=reservations.filter(rv=>
+          rv.dorm_id==dorm.id &&
+          String(rv.floor)==String(floor) &&
+          rv.room===roomName &&
+          (rv.status==='pending'||rv.status==='confirmed')
+        );
 
-        // Визначаємо стать мешканців
+        const occupied=roomRes.length;
+        const reserved=roomReservations.length;
+        const full=(occupied+reserved)>=info.capacity;
+
+        let genderIcon='';
         const males=roomRes.filter(r=>r.gender==='male').length;
         const females=roomRes.filter(r=>r.gender==='female').length;
-        let genderIcon='';
+
         if(info.gender==='male') genderIcon='<span class="gender-badge gender-male">♂ tylko chłopcy</span>';
         else if(info.gender==='female') genderIcon='<span class="gender-badge gender-female">♀ tylko dziewczyny</span>';
         else if(males>0&&females===0) genderIcon='<span class="gender-badge gender-male">♂</span>';
         else if(females>0&&males===0) genderIcon='<span class="gender-badge gender-female">♀</span>';
         else if(males>0&&females>0) genderIcon='<span class="gender-badge" style="background:#fef3c7;color:#92400e">♂♀</span>';
 
-        html+=`<div class="room-card ${full ? 'full' : occupied > 0 ? 'has-residents' : 'has-residents'}" style="${full ? '' : occupied === 0 ? 'border-color:#27ae60;background:#f0fff4;opacity:0.6' : ''}">
+        html+=`<div class="room-card ${full?'full':'has-residents'}" style="${!full&&occupied===0&&reserved===0?'border-color:#27ae60;background:#f0fff4;opacity:0.65':''}">
           <button class="room-add-btn" onclick="openAddResidentRoom(${dorm.id},'${floor}','${roomName}')" title="Dodaj">+</button>
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div class="room-name">${roomName}</div>
             ${genderIcon}
           </div>
-          <div class="room-capacity" style="color:${full?'var(--red)':occupied>0?'var(--green)':'#888'}">${occupied}/${info.capacity} ${full?'— PEŁNY':''}</div>
+          <div class="room-capacity" style="color:${full?'var(--red)':reserved>0?'#1e40af':occupied>0?'var(--green)':'#888'}">
+            ${occupied}/${info.capacity}${reserved>0 ? ` + ${reserved} RES` : ''} ${full?'— PEŁNY':''}
+          </div>
           <div class="room-residents">`;
 
         filtered.forEach(r=>{
           const gIcon=r.gender==='male'?'♂':r.gender==='female'?'♀':'';
           const gColor=r.gender==='male'?'#1e40af':r.gender==='female'?'#9d174d':'#888';
-          // Перевіряємо термін договору
           let contractAlert='';
+
           if(r.contract_end){
             const daysLeft=Math.ceil((new Date(r.contract_end)-new Date())/(1000*60*60*24));
             if(daysLeft<=30&&daysLeft>0) contractAlert=`<span style="color:var(--orange);font-size:10px">⚠️ umowa za ${daysLeft}d</span>`;
             else if(daysLeft<=0) contractAlert=`<span style="color:var(--red);font-size:10px">❌ umowa wygasła</span>`;
           }
+
           html+=`<div class="room-resident-name" style="display:flex;justify-content:space-between;align-items:center;gap:4px;padding:4px 0;border-top:1px solid #f0f0f0;margin-top:2px">
             <div style="flex:1;min-width:0">
               <span style="color:${gColor};font-weight:700;margin-right:3px">${gIcon}</span>
@@ -1249,32 +1264,30 @@ function renderResidents(){
               <button class="btn btn-danger btn-sm" style="padding:2px 6px;font-size:10px" onclick="evictResident(${r.id})">✗</button>
             </div>
           </div>`;
-
         });
-        html+=`</div></div>`;
-        // Резервації для цієї кімнати
-const roomReservations = reservations.filter(rv =>
-  rv.dorm_id == dorm.id &&
-  String(rv.floor) == String(floor) &&
-  rv.room === roomName &&
-  (rv.status === 'pending' || rv.status === 'confirmed')
-);
 
-roomReservations.forEach(rv => {
-  html += `<div class="room-resident-name" style="display:flex;justify-content:space-between;align-items:center;gap:4px;padding:4px 0;border-top:1px solid #f0f0f0;margin-top:2px">
-    <div style="flex:1;min-width:0">
-      <span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;margin-right:4px">RES</span>
-      <span style="font-size:12px;color:#1e40af">${rv.full_name || rv.first_name + ' ' + rv.last_name}</span>
-      <br><span style="font-size:10px;color:#888">od ${rv.checkin}</span>
-    </div>
-    <button class="btn btn-success btn-sm" style="padding:2px 6px;font-size:10px" onclick="checkInFromReservation(${rv.id})">🏠</button>
-  </div>`;
-});
+        roomReservations.forEach(rv=>{
+          const resName=rv.full_name || `${rv.first_name||''} ${rv.last_name||''}`.trim() || 'Rezerwacja';
+
+          html+=`<div class="room-resident-name" style="display:flex;justify-content:space-between;align-items:center;gap:4px;padding:6px 0;border-top:1px solid #bfdbfe;margin-top:3px;background:#eff6ff;border-radius:6px">
+            <div style="flex:1;min-width:0;padding-left:5px">
+              <span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;margin-right:4px">RES</span>
+              <span style="font-size:12px;color:#1e40af;font-weight:700">${resName}</span>
+              <br><span style="font-size:10px;color:#64748b">od ${rv.checkin||'—'}</span>
+            </div>
+            <button class="btn btn-success btn-sm" style="padding:2px 6px;font-size:10px" onclick="checkInFromReservation(${rv.id})">🏠</button>
+          </div>`;
+        });
+
+        html+=`</div></div>`;
       });
-      html+='</div></div>';
+
+      html+=`</div></div>`;
     });
-    html+='</div>';
+
+    html+=`</div>`;
   });
+
   document.getElementById('residents-structure').innerHTML=html||'<div class="empty">Brak danych</div>';
 }
 
