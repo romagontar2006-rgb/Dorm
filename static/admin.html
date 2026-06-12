@@ -759,32 +759,74 @@ function renderTodayTasks(){
 
 function renderContractAlerts(){
   const now = warsawNow();
-  const alerts = [];
-  residents.filter(r=>r.status==='active'&&r.contract_end).forEach(r=>{
+  const container = document.getElementById('contract-alerts');
+
+  const groups = {
+    expired:  { label: 'Wygasłe lub do 14 dni',    color: '#dc2626', icon: '🔴', items: [] },
+    warning:  { label: 'Kończą się za 15–30 dni',   color: '#f59e0b', icon: '🟡', items: [] },
+    upcoming: { label: 'Kończą się za 31–60 dni',   color: '#16a34a', icon: '🟢', items: [] },
+  };
+
+  residents.filter(r => r.status === 'active' && r.contract_end).forEach(r => {
     const end = new Date(r.contract_end);
-    const days = Math.ceil((end-now)/(1000*60*60*24));
-    let color,icon,label;
-    if(days<=0){color='var(--red)';icon='🔴';label='Umowa wygasła!';}
-    else if(days<=14){color='var(--red)';icon='🔴';label=`Kończy się za ${days} dni`;}
-    else if(days<=30){color='var(--orange)';icon='🟡';label=`Kończy się za ${days} dni`;}
-    else if(days<=60){color='var(--green)';icon='🟢';label=`Ważna jeszcze ${days} dni`;}
-    else return;
-    alerts.push({r,days,color,icon,label,end});
+    const days = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+    if      (days <= 14)  groups.expired.items.push({r, days, end});
+    else if (days <= 30)  groups.warning.items.push({r, days, end});
+    else if (days <= 60)  groups.upcoming.items.push({r, days, end});
   });
-  alerts.sort((a,b)=>a.days-b.days);
-  const container=document.getElementById('contract-alerts');
-  if(!alerts.length){container.innerHTML='<div style="color:#aaa;font-size:13px;padding:10px 0">✅ Brak pilnych umów</div>';return;}
-  container.innerHTML=alerts.map(a=>`
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:white;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.07);border-left:4px solid ${a.color}">
-      <div style="font-size:20px">${a.icon}</div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:700">${a.r.full_name}</div>
-        <div style="font-size:12px;color:#666">${dormName(a.r.dorm_id)} • pokój ${a.r.room}</div>
-        <div style="font-size:12px;color:${a.color};font-weight:600">Umowa do: ${formatDate(a.end)} — ${a.label}</div>
-        <div style="font-size:11px;color:#999;margin-top:2px">Należy przedłużyć umowę lub wymeldować</div>
+
+  const hasAny = Object.values(groups).some(g => g.items.length > 0);
+  if (!hasAny) {
+    container.innerHTML = '<div style="color:#aaa;font-size:13px;padding:10px 0">✅ Brak pilnych umów</div>';
+    return;
+  }
+
+  let html = '';
+  Object.entries(groups).forEach(([key, group]) => {
+    if (!group.items.length) return;
+    const detailId = 'contract-group-' + key;
+    html += `
+      <div onclick="toggleContractGroup('${detailId}')"
+        style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 16px;
+               border-radius:10px;background:white;margin-bottom:6px;
+               box-shadow:0 1px 4px rgba(0,0,0,0.07);border-left:4px solid ${group.color}">
+        <div style="font-size:18px">${group.icon}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:#333">${group.label}</div>
+          <div style="font-size:12px;color:${group.color};font-weight:600;margin-top:2px">
+            ${group.items.length} ${group.items.length === 1 ? 'osoba' : group.items.length < 5 ? 'osoby' : 'osób'} — kliknij aby zobaczyć
+          </div>
+        </div>
+        <span id="${detailId}-arrow" style="color:#aaa;font-size:12px;transition:transform .2s">▼</span>
       </div>
-      <button class="btn btn-light btn-sm" onclick="openEditResident(${a.r.id})" style="flex-shrink:0">✏️ Edytuj</button>
-    </div>`).join('');
+      <div id="${detailId}" style="display:none;padding:0 0 8px 12px">
+        ${group.items.sort((a,b) => a.days - b.days).map(({r, days, end}) => `
+          <div style="display:flex;align-items:center;justify-content:space-between;
+                      padding:9px 12px;border-radius:9px;background:#f7f9fc;
+                      margin-bottom:5px;border-left:3px solid ${group.color}">
+            <div>
+              <div style="font-size:13px;font-weight:700">${r.full_name}</div>
+              <div style="font-size:11px;color:#888">${dormName(r.dorm_id)} • pokój ${r.room} • umowa do: ${formatDate(end)}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:12px;color:${group.color};font-weight:600;white-space:nowrap">
+                ${days <= 0 ? 'Wygasła!' : `Za ${days} dni`}
+              </span>
+              <button class="btn btn-light btn-sm" onclick="event.stopPropagation();openEditResident(${r.id})">✏️</button>
+            </div>
+          </div>`).join('')}
+      </div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+function toggleContractGroup(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById(id + '-arrow');
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
 
