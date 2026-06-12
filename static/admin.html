@@ -347,7 +347,7 @@ tr:hover td{background:#fafbff}
       <div style="background:white;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,0.07)">
         <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:12px;display:flex;align-items:center;gap:8px">
   ⚠️ Kontrola umów najmu
-  <span style="font-size:11px;font-weight:400;color:#888">(najbliższe 60 dni)</span>
+  <span style="font-size:11px;font-weight:400;color:#888">(najbliższe 90 dni)</span>
   <button onclick="openContractCalendar()" class="btn btn-light btn-sm" style="margin-left:auto">📅 Kalendarz</button>
 </div>
         <!-- ЗАДАЧІ НА СЬОГОДНІ -->
@@ -762,18 +762,22 @@ function renderContractAlerts(){
   const container = document.getElementById('contract-alerts');
 
   const groups = {
-    expired:  { label: 'Wygasłe lub do 14 dni',    color: '#dc2626', icon: '🔴', items: [] },
-    warning:  { label: 'Kończą się za 15–30 dni',   color: '#f59e0b', icon: '🟡', items: [] },
-    upcoming: { label: 'Kończą się za 31–60 dni',   color: '#16a34a', icon: '🟢', items: [] },
+    urgent:   { label: 'Wygasłe lub do 30 dni',    color: '#dc2626', icon: '🔴', items: [] },
+    warning:  { label: 'Kończą się za 31–60 dni',   color: '#f59e0b', icon: '🟡', items: [] },
+    upcoming: { label: 'Kończą się za 61–90 dni',   color: '#16a34a', icon: '🟢', items: [] },
   };
 
   residents.filter(r => r.status === 'active' && r.contract_end).forEach(r => {
     const end = new Date(r.contract_end);
     const days = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-    if      (days <= 14)  groups.expired.items.push({r, days, end});
-    else if (days <= 30)  groups.warning.items.push({r, days, end});
-    else if (days <= 60)  groups.upcoming.items.push({r, days, end});
+    if      (days <= 30)  groups.urgent.items.push({r, days, end});
+    else if (days <= 60)  groups.warning.items.push({r, days, end});
+    else if (days <= 90)  groups.upcoming.items.push({r, days, end});
   });
+
+  // Оновлюємо заголовок блоку
+  const titleSpan = document.querySelector('#page-dashboard .today-tasks')
+    ?.closest('div')?.querySelector('span[style*="najbliższe"]');
 
   const hasAny = Object.values(groups).some(g => g.items.length > 0);
   if (!hasAny) {
@@ -785,6 +789,9 @@ function renderContractAlerts(){
   Object.entries(groups).forEach(([key, group]) => {
     if (!group.items.length) return;
     const detailId = 'contract-group-' + key;
+    const count = group.items.length;
+    const countLabel = count === 1 ? '1 osoba' : count < 5 ? `${count} osoby` : `${count} osób`;
+
     html += `
       <div onclick="toggleContractGroup('${detailId}')"
         style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 16px;
@@ -794,7 +801,7 @@ function renderContractAlerts(){
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700;color:#333">${group.label}</div>
           <div style="font-size:12px;color:${group.color};font-weight:600;margin-top:2px">
-            ${group.items.length} ${group.items.length === 1 ? 'osoba' : group.items.length < 5 ? 'osoby' : 'osób'} — kliknij aby zobaczyć
+            ${countLabel} — kliknij aby zobaczyć
           </div>
         </div>
         <span id="${detailId}-arrow" style="color:#aaa;font-size:12px;transition:transform .2s">▼</span>
@@ -806,13 +813,16 @@ function renderContractAlerts(){
                       margin-bottom:5px;border-left:3px solid ${group.color}">
             <div>
               <div style="font-size:13px;font-weight:700">${r.full_name}</div>
-              <div style="font-size:11px;color:#888">${dormName(r.dorm_id)} • pokój ${r.room} • umowa do: ${formatDate(end)}</div>
+              <div style="font-size:11px;color:#888">
+                ${dormName(r.dorm_id)} • pokój ${r.room} • umowa do: ${formatDate(end)}
+              </div>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:12px;color:${group.color};font-weight:600;white-space:nowrap">
                 ${days <= 0 ? 'Wygasła!' : `Za ${days} dni`}
               </span>
-              <button class="btn btn-light btn-sm" onclick="event.stopPropagation();openEditResident(${r.id})">✏️</button>
+              <button class="btn btn-light btn-sm"
+                onclick="event.stopPropagation();openEditResident(${r.id})">✏️</button>
             </div>
           </div>`).join('')}
       </div>`;
