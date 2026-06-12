@@ -1208,8 +1208,13 @@ function renderResidents(){
       html+=`<div class="floor-section"><div class="floor-title">Mieszkanie / Sekcja: ${floor}</div><div class="rooms-grid">`;
 
       Object.entries(rooms).forEach(([roomName,info])=>{
-        const roomRes=residents.filter(r=>r.dorm_id==dorm.id&&String(r.floor)==String(floor)&&r.room===roomName&&r.status==='active');
-        const filtered=roomRes.filter(r=>(r.full_name||'').toLowerCase().includes(q));
+        const roomRes=residents.filter(r=>
+          r.dorm_id==dorm.id &&
+          String(r.floor)==String(floor) &&
+          r.room===roomName &&
+          r.status==='active'
+        );
+
         const roomReservations=reservations.filter(rv=>
           rv.dorm_id==dorm.id &&
           String(rv.floor)==String(floor) &&
@@ -1217,47 +1222,49 @@ function renderResidents(){
           (rv.status==='pending'||rv.status==='confirmed')
         );
 
+        const filtered=roomRes.filter(r=>(r.full_name||'').toLowerCase().includes(q));
         const occupied=roomRes.length;
         const reserved=roomReservations.length;
-        const full=(occupied+reserved)>=info.capacity;
+        const totalUsed=occupied+reserved;
+        const full=totalUsed>=info.capacity;
 
-        let genderIcon='';
         const males=roomRes.filter(r=>r.gender==='male').length;
         const females=roomRes.filter(r=>r.gender==='female').length;
 
+        let genderIcon='';
         if(info.gender==='male') genderIcon='<span class="gender-badge gender-male">♂ tylko chłopcy</span>';
         else if(info.gender==='female') genderIcon='<span class="gender-badge gender-female">♀ tylko dziewczyny</span>';
-        else if(males>0&&females===0) genderIcon='<span class="gender-badge gender-male">♂</span>';
-        else if(females>0&&males===0) genderIcon='<span class="gender-badge gender-female">♀</span>';
-        else if(males>0&&females>0) genderIcon='<span class="gender-badge" style="background:#fef3c7;color:#92400e">♂♀</span>';
+        else if(males>0&&females===0) genderIcon='<span class="gender-badge gender-male">♂ chłopcy</span>';
+        else if(females>0&&males===0) genderIcon='<span class="gender-badge gender-female">♀ dziewczyny</span>';
 
-        html+=`<div class="room-card ${full?'full':'has-residents'}" style="${!full&&occupied===0&&reserved===0?'border-color:#27ae60;background:#f0fff4;opacity:0.65':''}">
+        html+=`
+        <div class="room-card ${full?'full':'has-residents'}"
+          style="${reserved>0?'border-color:#2563eb;background:#eff6ff;box-shadow:0 0 0 2px rgba(37,99,235,.15)':(!full&&occupied===0?'border-color:#27ae60;background:#f0fff4;opacity:.75':'')}">
+
           <button class="room-add-btn" onclick="openAddResidentRoom(${dorm.id},'${floor}','${roomName}')" title="Dodaj">+</button>
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
             <div class="room-name">${roomName}</div>
             ${genderIcon}
           </div>
-          <div class="room-capacity" style="color:${full?'var(--red)':reserved>0?'#1e40af':occupied>0?'var(--green)':'#888'}">
-            ${occupied}/${info.capacity}${reserved>0 ? ` + ${reserved} RES` : ''} ${full?'— PEŁNY':''}
+
+          <div class="room-capacity" style="color:${reserved>0?'#2563eb':full?'var(--red)':occupied>0?'var(--green)':'#888'}">
+            ${occupied}/${info.capacity}
+            ${reserved>0 ? ` + ${reserved} REZ` : ''}
+            ${full?' — PEŁNY':''}
           </div>
+
           <div class="room-residents">`;
 
         filtered.forEach(r=>{
           const gIcon=r.gender==='male'?'♂':r.gender==='female'?'♀':'';
           const gColor=r.gender==='male'?'#1e40af':r.gender==='female'?'#9d174d':'#888';
-          let contractAlert='';
 
-          if(r.contract_end){
-            const daysLeft=Math.ceil((new Date(r.contract_end)-new Date())/(1000*60*60*24));
-            if(daysLeft<=30&&daysLeft>0) contractAlert=`<span style="color:var(--orange);font-size:10px">⚠️ umowa za ${daysLeft}d</span>`;
-            else if(daysLeft<=0) contractAlert=`<span style="color:var(--red);font-size:10px">❌ umowa wygasła</span>`;
-          }
-
-          html+=`<div class="room-resident-name" style="display:flex;justify-content:space-between;align-items:center;gap:4px;padding:4px 0;border-top:1px solid #f0f0f0;margin-top:2px">
+          html+=`
+          <div class="room-resident-name" style="display:flex;justify-content:space-between;align-items:center;gap:4px;padding:4px 0;border-top:1px solid #f0f0f0;margin-top:2px">
             <div style="flex:1;min-width:0">
               <span style="color:${gColor};font-weight:700;margin-right:3px">${gIcon}</span>
               <span style="font-size:12px">${r.full_name}</span>
-              ${contractAlert?'<br>'+contractAlert:''}
             </div>
             <div style="display:flex;gap:3px;flex-shrink:0">
               <button class="btn btn-light btn-sm" style="padding:2px 6px;font-size:10px" onclick="openEditResident(${r.id})">✏️</button>
@@ -1269,13 +1276,25 @@ function renderResidents(){
         roomReservations.forEach(rv=>{
           const resName=rv.full_name || `${rv.first_name||''} ${rv.last_name||''}`.trim() || 'Rezerwacja';
 
-          html+=`<div class="room-resident-name" style="display:flex;justify-content:space-between;align-items:center;gap:4px;padding:6px 0;border-top:1px solid #bfdbfe;margin-top:3px;background:#eff6ff;border-radius:6px">
-            <div style="flex:1;min-width:0;padding-left:5px">
-              <span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;margin-right:4px">RES</span>
-              <span style="font-size:12px;color:#1e40af;font-weight:700">${resName}</span>
-              <br><span style="font-size:10px;color:#64748b">od ${rv.checkin||'—'}</span>
+          html+=`
+          <div style="
+            margin-top:6px;
+            padding:7px 8px;
+            border-radius:8px;
+            background:#dbeafe;
+            border:1px solid #60a5fa;
+            color:#1e40af;
+            font-size:12px;
+            font-weight:700;
+          ">
+            🔵 REZERWACJA — ${resName}
+            <br>
+            <span style="font-size:10px;color:#475569;font-weight:400">
+              od ${rv.checkin||'—'} ${rv.gender==='male'?'• ♂':rv.gender==='female'?'• ♀':''}
+            </span>
+            <div style="margin-top:5px">
+              <button class="btn btn-success btn-sm" style="padding:3px 7px;font-size:10px" onclick="checkInFromReservation(${rv.id})">🏠 Zasel</button>
             </div>
-            <button class="btn btn-success btn-sm" style="padding:2px 6px;font-size:10px" onclick="checkInFromReservation(${rv.id})">🏠</button>
           </div>`;
         });
 
@@ -1784,12 +1803,18 @@ function suggestRoom() {
       if (info.gender !== 'any' && gender !== 'any' && info.gender !== gender) return;
 
       // Активні мешканці
+
       const activeRes = residents.filter(r =>
         r.dorm_id == dormId &&
         String(r.floor) == String(floor) &&
         r.room === roomName &&
         r.status === 'active'
       );
+      const malesInRoom = activeRes.filter(r => r.gender === 'male').length;
+const femalesInRoom = activeRes.filter(r => r.gender === 'female').length;
+
+if (gender === 'male' && femalesInRoom > 0) return;
+if (gender === 'female' && malesInRoom > 0) return;
 
       // Активні резервації
       const activeReservations = reservations.filter(rv =>
