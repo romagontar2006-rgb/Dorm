@@ -387,28 +387,31 @@ tr:hover td{background:#fafbff}
 </div>
 
       <!-- РЕЗЕРВАЦІЇ -->
-      <div class="page" id="page-reservations">
-        <div class="section-title"><span data-t="reservations_title">Rezerwacje</span></div>
-        <div class="filter-bar">
-          <input type="text" id="res-search" placeholder="🔍 Szukaj..." oninput="renderReservations()">
-          <select id="res-filter" onchange="renderReservations()">
-            <option value="">Wszystkie statusy</option>
-            <option value="pending">Oczekuje</option>
-            <option value="confirmed">Potwierdzone</option>
-            <option value="rejected">Odrzucone</option>
-            <option value="reserve">Lista rezerwowa</option>
-          </select>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr>
-              <th>#</th><th>Imię i nazwisko</th><th>Kontakt</th>
-              <th>Akademik</th><th>Daty</th><th>Status</th><th>Akcje</th>
-            </tr></thead>
-            <tbody id="res-tbody"></tbody>
-          </table>
-        </div>
-      </div>
+<div class="page" id="page-reservations">
+  <div class="section-title">
+    🏠 Rezerwacje
+    <button class="btn btn-primary" onclick="openAddReservation()">+ Nowa rezerwacja</button>
+  </div>
+  <div class="filter-bar">
+    <input type="text" id="res-search" placeholder="🔍 Szukaj..." oninput="renderReservations()">
+    <select id="res-filter" onchange="renderReservations()">
+      <option value="">Wszystkie statusy</option>
+      <option value="pending">Oczekuje</option>
+      <option value="confirmed">Potwierdzone</option>
+      <option value="rejected">Odrzucone</option>
+      <option value="reserve">Lista rezerwowa</option>
+    </select>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>#</th><th>Imię i nazwisko</th><th>Kontakt</th>
+        <th>Akademik</th><th>Pokój</th><th>Daty</th><th>Status</th><th>Akcje</th>
+      </tr></thead>
+      <tbody id="res-tbody"></tbody>
+    </table>
+  </div>
+</div>
 
       <!-- МЕШКАНЦІ -->
       <div class="page" id="page-residents">
@@ -1102,27 +1105,67 @@ async function deleteNote(id){
 function renderReservations(){
   const q=(document.getElementById('res-search').value||'').toLowerCase();
   const f=document.getElementById('res-filter').value;
-  const data=reservations.filter(r=>(`${r.first_name} ${r.last_name} ${r.email}`).toLowerCase().includes(q)&&(!f||r.status===f));
-  document.getElementById('res-tbody').innerHTML=data.length?data.map(r=>`
+  const data=reservations.filter(r=>
+    (`${r.first_name} ${r.last_name} ${r.email||''}`).toLowerCase().includes(q) &&
+    (!f || r.status===f)
+  );
+  document.getElementById('res-tbody').innerHTML = data.length ? data.map(r => `
     <tr>
       <td><b>#${r.id}</b></td>
-      <td><b>${r.first_name} ${r.last_name}</b><br><span style="font-size:11px;color:#888">${r.is_wsg?'WSG':'Inny'} • <span class="gender-badge gender-${r.gender}">${r.gender==='male'?'♂':'♀'}</span></span></td>
-      <td style="font-size:12px">${r.email}<br>${r.phone}</td>
+      <td>
+        <b>${r.first_name} ${r.last_name}</b><br>
+        <span style="font-size:11px;color:#888">
+          <span class="gender-badge gender-${r.gender||'any'}">${r.gender==='male'?'♂':r.gender==='female'?'♀':'—'}</span>
+        </span>
+      </td>
+      <td style="font-size:12px">${r.email||'—'}<br>${r.phone||'—'}</td>
       <td style="font-size:12px">${dormName(r.dorm_id)}</td>
-      <td style="font-size:12px">${r.checkin}<br>${r.checkout}</td>
+      <td style="font-size:12px">
+        ${r.room ? `<b>${r.room}</b><br><span style="color:#888">mies. ${r.floor||'—'}</span>` : '<span style="color:#aaa">—</span>'}
+      </td>
+      <td style="font-size:12px">${r.checkin||'—'}<br>${r.checkout||'—'}</td>
       <td>${statusBadge(r.status)}</td>
-      <td><div class="btn-group">
-        <button class="btn btn-success btn-sm" onclick="setResStatus(${r.id},'confirmed')" title="Potwierdź">✓</button>
-        <button class="btn btn-danger btn-sm" onclick="setResStatus(${r.id},'rejected')" title="Odrzuć">✗</button>
-        <button class="btn btn-warning btn-sm" onclick="setResStatus(${r.id},'reserve')" title="Rezerwowy">⏳</button>
-      </div></td>
-    </tr>`).join(''):`<tr><td colspan="7" class="empty">Brak wyników</td></tr>`;
+      <td>
+        <div class="btn-group">
+          ${(!r.resident_id) ? `<button class="btn btn-success btn-sm" onclick="checkInFromReservation(${r.id})" title="Zasel">🏠 Zasel</button>` : '<span style="font-size:11px;color:var(--green)">✓ Zamieszkały</span>'}
+          <button class="btn btn-danger btn-sm" onclick="setResStatus(${r.id},'rejected')" title="Anuluj">✗</button>
+        </div>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="8" class="empty">Brak wyników</td></tr>`;
 }
 
-async function setResStatus(id,status){
-  await fetch(`/api/reservations/${id}?status=${status}&password=${pwd}`,{method:'PATCH'});
-  reservations=await fetch(`/api/reservations?password=${pwd}`).then(r=>r.json());
-  renderReservations();renderDashboard();
+function checkInFromReservation(resId) {
+  const res = reservations.find(r => r.id === resId);
+  if (!res) return;
+
+  // Відкриваємо форму мешканця з заповненими даними
+  openAddResident();
+
+  setTimeout(() => {
+    document.getElementById('m-name').value = res.full_name || `${res.first_name} ${res.last_name}`;
+    document.getElementById('m-gender').value = res.gender || 'any';
+    document.getElementById('m-email').value = res.email || '';
+    document.getElementById('m-phone').value = res.phone || '';
+    document.getElementById('m-checkin').value = res.checkin || '';
+    document.getElementById('m-checkout').value = res.checkout || '';
+
+    if (res.dorm_id) {
+      document.getElementById('m-dorm').value = res.dorm_id;
+      updateFloors();
+      setTimeout(() => {
+        if (res.floor) {
+          document.getElementById('m-floor').value = String(res.floor);
+          updateRooms();
+          setTimeout(() => {
+            if (res.room) document.getElementById('m-room').value = res.room;
+          }, 60);
+        }
+      }, 60);
+    }
+
+    // Зберігаємо ID резервації щоб потім оновити статус
+    document.getElementById('m-id').dataset.fromReservation = resId;
+  }, 100);
 }
 
 // ── МЕШКАНЦІ ──
@@ -1176,7 +1219,7 @@ function renderResidents(){
         else if(females>0&&males===0) genderIcon='<span class="gender-badge gender-female">♀</span>';
         else if(males>0&&females>0) genderIcon='<span class="gender-badge" style="background:#fef3c7;color:#92400e">♂♀</span>';
 
-        html+=`<div class="room-card ${occupied>0?(full?'full':'has-residents'):''}">
+        html+=`<div class="room-card ${full ? 'full' : occupied > 0 ? 'has-residents' : 'has-residents'}" style="${full ? '' : occupied === 0 ? 'border-color:#27ae60;background:#f0fff4;opacity:0.6' : ''}">
           <button class="room-add-btn" onclick="openAddResidentRoom(${dorm.id},'${floor}','${roomName}')" title="Dodaj">+</button>
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div class="room-name">${roomName}</div>
@@ -1206,6 +1249,26 @@ function renderResidents(){
               <button class="btn btn-danger btn-sm" style="padding:2px 6px;font-size:10px" onclick="evictResident(${r.id})">✗</button>
             </div>
           </div>`;
+
+
+          // Резервації для цієї кімнати
+const roomReservations = reservations.filter(rv =>
+  rv.dorm_id == dorm.id &&
+  String(rv.floor) == String(floor) &&
+  rv.room === roomName &&
+  (rv.status === 'pending' || rv.status === 'confirmed')
+);
+
+roomReservations.forEach(rv => {
+  html += `<div class="room-resident-name" style="display:flex;justify-content:space-between;align-items:center;gap:4px;padding:4px 0;border-top:1px solid #f0f0f0;margin-top:2px">
+    <div style="flex:1;min-width:0">
+      <span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;margin-right:4px">RES</span>
+      <span style="font-size:12px;color:#1e40af">${rv.full_name || rv.first_name + ' ' + rv.last_name}</span>
+      <br><span style="font-size:10px;color:#888">od ${rv.checkin}</span>
+    </div>
+    <button class="btn btn-success btn-sm" style="padding:2px 6px;font-size:10px" onclick="checkInFromReservation(${rv.id})">🏠</button>
+  </div>`;
+});
         });
         html+=`</div></div>`;
       });
@@ -1336,6 +1399,13 @@ async function saveResident(){
   }
 
   residents=await fetch(`/api/residents?password=${pwd}`).then(r=>r.json());
+  // Якщо заселяємо з резервації — оновлюємо її статус
+  const fromRes = document.getElementById('m-id').dataset.fromReservation;
+  if (fromRes) {
+    await fetch(`/api/reservations/${fromRes}?status=confirmed&password=${pwd}`, { method: 'PATCH' });
+    reservations = await fetch(`/api/reservations?password=${pwd}`).then(r => r.json());
+    delete document.getElementById('m-id').dataset.fromReservation;
+  }
   dorms=await fetch('/api/dorms').then(r=>r.json());
   closeModal('modal-resident');
   selectedPhotoFile=null;
@@ -1652,6 +1722,190 @@ function toggleTheme(){
   localStorage.setItem('theme', isDark?'light':'dark');
 }
 
+// ── НОВІ РЕЗЕРВАЦІЇ (АДМІН) ──
+
+function openAddReservation() {
+  document.getElementById('mr-id').value = '';
+  document.getElementById('modal-res-title').textContent = '🏠 Nowa rezerwacja';
+  document.getElementById('mr-name').value = '';
+  document.getElementById('mr-gender').value = 'any';
+  document.getElementById('mr-email').value = '';
+  document.getElementById('mr-phone').value = '';
+  document.getElementById('mr-checkin').value = '';
+  document.getElementById('mr-checkout').value = '';
+  document.getElementById('mr-notes').value = '';
+  document.getElementById('mr-suggestion').textContent = '';
+
+  const dormSel = document.getElementById('mr-dorm');
+  dormSel.innerHTML = '<option value="">— wybierz —</option>';
+  dorms.forEach(d => {
+    dormSel.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+  });
+  document.getElementById('mr-floor').innerHTML = '<option value="">— wybierz —</option>';
+  document.getElementById('mr-room').innerHTML = '<option value="">— wybierz —</option>';
+
+  document.getElementById('modal-reservation').classList.add('open');
+}
+
+function suggestRoom() {
+  const dormId = parseInt(document.getElementById('mr-dorm').value);
+  const gender = document.getElementById('mr-gender').value;
+  const checkin = document.getElementById('mr-checkin').value;
+  const suggEl = document.getElementById('mr-suggestion');
+
+  updateMrFloors();
+
+  if (!dormId || !checkin) {
+    suggEl.innerHTML = '';
+    return;
+  }
+
+  const structure = roomsStructure[dormId] || {};
+  const checkinDate = new Date(checkin);
+
+  // Знаходимо всі вільні кімнати
+  const suggestions = [];
+
+  Object.entries(structure).forEach(([floor, rooms]) => {
+    Object.entries(rooms).forEach(([roomName, info]) => {
+      // Перевірка статі кімнати
+      if (info.gender !== 'any' && gender !== 'any' && info.gender !== gender) return;
+
+      // Активні мешканці
+      const activeRes = residents.filter(r =>
+        r.dorm_id == dormId &&
+        String(r.floor) == String(floor) &&
+        r.room === roomName &&
+        r.status === 'active'
+      );
+
+      // Активні резервації
+      const activeReservations = reservations.filter(rv =>
+        rv.dorm_id == dormId &&
+        rv.floor == floor &&
+        rv.room === roomName &&
+        (rv.status === 'pending' || rv.status === 'confirmed')
+      );
+
+      const occupiedCount = activeRes.length + activeReservations.length;
+      const freeSlots = info.capacity - occupiedCount;
+
+      // Перевіряємо чи будуть вільні місця до дати заїзду
+      const soonFree = activeRes.filter(r => {
+        if (!r.contract_end) return false;
+        const endDate = new Date(r.contract_end);
+        return endDate <= checkinDate;
+      }).length;
+
+      const effectiveFree = freeSlots + soonFree;
+
+      if (effectiveFree > 0) {
+        suggestions.push({ floor, roomName, info, freeSlots, soonFree, effectiveFree });
+      }
+    });
+  });
+
+  if (suggestions.length === 0) {
+    suggEl.innerHTML = '<span style="color:var(--red)">❌ Brak wolnych miejsc dla wybranych kryteriów</span>';
+    return;
+  }
+
+  // Сортуємо — спочатку ті що вільні зараз
+  suggestions.sort((a, b) => b.freeSlots - a.freeSlots);
+  const best = suggestions[0];
+
+  suggEl.innerHTML = `
+    <span style="color:var(--green)">✅ Sugerowany pokój: <b>${best.roomName}</b> (mieszkanie ${best.floor})</span>
+    ${best.soonFree > 0 ? `<span style="color:var(--orange);margin-left:8px">⚠️ ${best.soonFree} miejsce zwolni się przed przyjazdem</span>` : ''}
+    <button class="btn btn-light btn-sm" style="margin-left:8px" onclick="applySuggestion('${best.floor}','${best.roomName}')">Zastosuj</button>
+    <br><span style="color:#888;font-size:11px">Wszystkich opcji: ${suggestions.length}</span>`;
+}
+
+function applySuggestion(floor, room) {
+  document.getElementById('mr-floor').value = floor;
+  updateMrRooms();
+  setTimeout(() => { document.getElementById('mr-room').value = room; }, 60);
+}
+
+function updateMrFloors() {
+  const dormId = parseInt(document.getElementById('mr-dorm').value);
+  const structure = roomsStructure[dormId] || {};
+  const floorSel = document.getElementById('mr-floor');
+  floorSel.innerHTML = '<option value="">— wybierz —</option>';
+  Object.keys(structure).forEach(f => {
+    floorSel.innerHTML += `<option value="${f}">${f}</option>`;
+  });
+  updateMrRooms();
+}
+
+function updateMrRooms() {
+  const dormId = parseInt(document.getElementById('mr-dorm').value);
+  const floor = document.getElementById('mr-floor').value;
+  const structure = roomsStructure[dormId] || {};
+  const rooms = structure[floor] || {};
+  const roomSel = document.getElementById('mr-room');
+  roomSel.innerHTML = '<option value="">— wybierz —</option>';
+
+  Object.entries(rooms).forEach(([name, info]) => {
+    const occupied = residents.filter(r =>
+      r.dorm_id == dormId && r.floor == floor && r.room === name && r.status === 'active'
+    ).length;
+    const reserved = reservations.filter(rv =>
+      rv.dorm_id == dormId && rv.floor == floor && rv.room === name &&
+      (rv.status === 'pending' || rv.status === 'confirmed')
+    ).length;
+    const free = info.capacity - occupied - reserved;
+    const genderLabel = info.gender === 'male' ? '♂' : info.gender === 'female' ? '♀' : '';
+    roomSel.innerHTML += `<option value="${name}" ${free <= 0 ? 'disabled' : ''}>
+      ${name} ${genderLabel}(${occupied + reserved}/${info.capacity})${free <= 0 ? ' — PEŁNY' : ''}
+    </option>`;
+  });
+}
+
+async function saveReservationAdmin() {
+  const name = document.getElementById('mr-name').value.trim();
+  const gender = document.getElementById('mr-gender').value;
+  const email = document.getElementById('mr-email').value;
+  const phone = document.getElementById('mr-phone').value;
+  const checkin = document.getElementById('mr-checkin').value;
+  const checkout = document.getElementById('mr-checkout').value;
+  const dormId = document.getElementById('mr-dorm').value;
+  const floor = document.getElementById('mr-floor').value;
+  const room = document.getElementById('mr-room').value;
+  const notes = document.getElementById('mr-notes').value;
+
+  if (!name || !checkin || !dormId || !room) {
+    alert('Wypełnij: imię, datę przyjazdu, akademik i pokój!');
+    return;
+  }
+
+  const nameParts = name.split(' ');
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || '';
+
+  await fetch(`/api/reservations?password=${pwd}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      first_name: firstName,
+      last_name: lastName,
+      full_name: name,
+      gender, email, phone, checkin, checkout,
+      dorm_id: parseInt(dormId),
+      floor, room,
+      is_wsg: true,
+      notes,
+      status: 'confirmed'
+    })
+  });
+
+  reservations = await fetch(`/api/reservations?password=${pwd}`).then(r => r.json());
+  closeModal('modal-reservation');
+  renderReservations();
+  renderResidents();
+  renderDashboard();
+}
+
 // Відновлюємо тему при завантаженні
 (function(){
   const saved = localStorage.getItem('theme')||'light';
@@ -1672,5 +1926,85 @@ function toggleTheme(){
     </div>
   </div>
 </div>
+
+<div class="modal" id="modal-reservation">
+  <div class="modal-box" style="width:580px">
+    <h3 id="modal-res-title">🏠 Nowa rezerwacja</h3>
+    <input type="hidden" id="mr-id" value="">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Imię i nazwisko</label>
+        <input type="text" id="mr-name" placeholder="Jan Kowalski">
+      </div>
+      <div class="form-group">
+        <label>Płeć</label>
+        <select id="mr-gender" onchange="suggestRoom()">
+          <option value="any">—</option>
+          <option value="male">♂ Mężczyzna</option>
+          <option value="female">♀ Kobieta</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="mr-email" placeholder="jan@example.com">
+      </div>
+      <div class="form-group">
+        <label>Telefon</label>
+        <input type="text" id="mr-phone" placeholder="+48 000 000 000">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Data przyjazdu</label>
+        <input type="date" id="mr-checkin" onchange="suggestRoom()">
+      </div>
+      <div class="form-group">
+        <label>Data wyjazdu</label>
+        <input type="date" id="mr-checkout">
+      </div>
+    </div>
+
+    <div style="background:#f0f7ff;border-radius:10px;padding:14px;margin-bottom:14px;border-left:4px solid var(--blue)">
+      <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:10px;text-transform:uppercase">🤖 Sugestia pokoju</div>
+      <div class="form-row3">
+        <div class="form-group">
+          <label>Akademik</label>
+          <select id="mr-dorm" onchange="suggestRoom()">
+            <option value="">— wybierz —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Mieszkanie</label>
+          <select id="mr-floor" onchange="updateMrRooms()">
+            <option value="">— wybierz —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Pokój</label>
+          <select id="mr-room">
+            <option value="">— wybierz —</option>
+          </select>
+        </div>
+      </div>
+      <div id="mr-suggestion" style="font-size:12px;color:#555;margin-top:4px"></div>
+    </div>
+
+    <div class="form-group">
+      <label>Notatki</label>
+      <textarea id="mr-notes" style="height:60px;width:100%;padding:10px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;outline:none;resize:none;font-family:inherit" placeholder="Dodatkowe informacje..."></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('modal-reservation')">Anuluj</button>
+      <button class="btn btn-primary" onclick="saveReservationAdmin()">✓ Zapisz rezerwację</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
