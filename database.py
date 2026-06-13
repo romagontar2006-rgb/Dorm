@@ -211,6 +211,11 @@ def update_reservation_status(res_id, status):
             r["status"] = status
     _save("reservations", items)
 
+def delete_reservation(res_id):
+    items = get_reservations()
+    items = [r for r in items if int(r["id"]) != int(res_id)]
+    _save("reservations", items)    
+
 # ────────────────────────────────────────────
 # МЕШКАНЦІ
 # ────────────────────────────────────────────

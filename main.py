@@ -252,6 +252,12 @@ async def update_reservation(res_id: int, data: dict, password: str = ""):
     db.update_reservation(res_id, data)
     return {"ok": True}
 
+@app.delete("/api/reservations/{res_id}")
+async def delete_reservation(res_id: int, password: str = ""):
+    check_admin(password)
+    db.delete_reservation(res_id)
+    return {"ok": True}
+
 # ── МЕШКАНЦІ ──
 @app.post("/api/residents")
 async def add_resident(r: ResidentIn, password: str = ""):
