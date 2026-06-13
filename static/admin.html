@@ -433,11 +433,10 @@ tr:hover td{background:#fafbff}
         <div class="filter-bar">
           <input type="text" id="tick-search" placeholder="🔍 Szukaj..." oninput="renderTickets()">
           <select id="tick-filter" onchange="renderTickets()">
-            <option value="">Wszystkie</option>
-            <option value="received">Otrzymano</option>
-            <option value="inprogress">W trakcie</option>
-            <option value="solved">Rozwiązano</option>
-          </select>
+  <option value="">Wszystkie</option>
+  <option value="inprogress">W trakcie</option>
+  <option value="solved">Zrobione</option>
+</select>
         </div>
         <div class="table-wrap">
           <table>
@@ -723,6 +722,7 @@ tr:hover td{background:#fafbff}
 <script>
 let lang='pl', pwd='', dorms=[], reservations=[], residents=[], tickets=[], history=[], roomsStructure={};
 let selectedPhotoFile=null, selectedRoom=null, selectedFloor=null, selectedDormId=null;
+const MATEUSZ_EMAIL = 'roma.gontar2006@gmail.com'; // тут потім вставиш реальний email Матеуша
 
 // ── ПЕРЕКЛАДИ ──
 const TL={
@@ -1596,21 +1596,112 @@ async function evictResident(id){
 function renderTickets(){
   const q=(document.getElementById('tick-search').value||'').toLowerCase();
   const f=document.getElementById('tick-filter').value;
-  const data=tickets.filter(tk=>(tk.description||'').toLowerCase().includes(q)&&(!f||tk.status===f));
+
+  const data=tickets.filter(tk=>
+    (`${tk.description||''} ${tk.room||''} ${dormName(tk.dorm_id)} ${tk.category||''}`).toLowerCase().includes(q)
+    && (!f||tk.status===f)
+  );
+
   document.getElementById('tick-tbody').innerHTML=data.length?data.map(tk=>`
     <tr>
       <td><b>#${tk.id}</b></td>
       <td style="font-size:12px">${dormName(tk.dorm_id)}</td>
       <td style="font-size:12px">${tk.room||'—'}</td>
-      <td style="font-size:12px;max-width:220px">${tk.description.substring(0,90)}
-        ${tk.photo_url?`<br><a href="${tk.photo_url}" target="_blank" style="color:var(--blue);font-size:11px">📸 foto</a>`:''}
+      <td style="font-size:12px">${tk.category||'Inne'}</td>
+      <td style="font-size:12px;max-width:260px">
+        ${tk.description.substring(0,120)}
         ${tk.admin_comment?`<div class="comment-box">💬 ${tk.admin_comment}</div>`:''}
+        ${tk.forwarded_at?`<div style="font-size:11px;color:#2563eb;margin-top:4px">📧 Przekazano Mateuszowi: ${tk.forwarded_at}</div>`:''}
+        ${tk.done_at?`<div style="font-size:11px;color:var(--green);margin-top:4px">✅ Zrobione: ${tk.done_at}</div>`:''}
       </td>
-      <td style="font-size:12px">${tk.created}</td>
-      <td>${statusBadge(tk.status)}</td>
-      <td><button class="btn btn-primary btn-sm" onclick="openComment(${tk.id},'${tk.status}','${(tk.admin_comment||'').replace(/'/g,"\\'")}')">💬</button></td>
-    </tr>`).join(''):`<tr><td colspan="7" class="empty">Brak wyników</td></tr>`;
+      <td style="font-size:12px">${tk.created||'—'}</td>
+      <td>${ticketStatusBadge(tk.status)}</td>
+      <td>
+        <div class="btn-group">
+          <button class="btn btn-primary btn-sm" onclick="sendTicketToMateusz(${tk.id})">📧 Mateusz</button>
+          <button class="btn btn-success btn-sm" onclick="markTicketDone(${tk.id})">✅</button>
+          <button class="btn btn-light btn-sm" onclick="openComment(${tk.id},'${tk.status}','${(tk.admin_comment||'').replace(/'/g,"\\'")}')">💬</button>
+        </div>
+      </td>
+    </tr>`).join(''):`<tr><td colspan="8" class="empty">Brak zgłoszeń</td></tr>`;
 }
+
+function ticketStatusBadge(status){
+  if(status==='solved'){
+    return '<span class="status-badge status-solved">Zrobione</span>';
+  }
+  return '<span class="status-badge status-inprogress">W trakcie</span>';
+}
+
+function makeMateuszSubject(tk){
+  const dorm=dormName(tk.dorm_id);
+  const room=tk.room ? `pokój ${tk.room}` : 'bez numeru pokoju';
+  return `Zgłoszenie problemu - ${room} przy ${dorm}`;
+}
+
+function makeMateuszBody(tk){
+  return `Dzień dobry,
+
+przekazuję informację dotyczącą zgłoszenia w akademiku.
+
+Akademik: ${dormName(tk.dorm_id)}
+Pokój / mieszkanie: ${tk.room || '—'}
+Kategoria: ${tk.category || 'Inne'}
+Priorytet: ${tk.priority || 'Normalny'}
+
+Opis:
+${tk.description || '—'}
+
+Uprzejmie proszę o sprawdzenie sytuacji oraz wykonanie niezbędnych prac.
+
+Z góry dziękuję za pomoc.
+
+Z poważaniem,
+Administracja Akademików WSG`;
+}
+
+async function sendTicketToMateusz(id){
+  const tk=tickets.find(x=>x.id===id);
+  if(!tk)return;
+
+  const subject=encodeURIComponent(makeMateuszSubject(tk));
+  const body=encodeURIComponent(makeMateuszBody(tk));
+
+  window.location.href=`mailto:${MATEUSZ_EMAIL}?subject=${subject}&body=${body}`;
+
+  const now=new Date().toLocaleString('pl-PL');
+  await fetch(`/api/tickets/${id}?password=${pwd}`,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      status:'inprogress',
+      forwarded_at:now
+    })
+  });
+
+  tickets=await fetch(`/api/tickets?password=${pwd}`).then(r=>r.json());
+  renderTickets();
+  renderDashboard();
+}
+
+async function markTicketDone(id){
+  if(!confirm('Oznaczyć zgłoszenie jako zrobione?'))return;
+
+  const now=new Date().toLocaleString('pl-PL');
+  await fetch(`/api/tickets/${id}?password=${pwd}`,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      status:'solved',
+      done_at:now
+    })
+  });
+
+  tickets=await fetch(`/api/tickets?password=${pwd}`).then(r=>r.json());
+  renderTickets();
+  renderDashboard();
+}
+
 
 function openComment(id,status,comment){
   document.getElementById('comment-ticket-id').value=id;
