@@ -1711,9 +1711,20 @@ function ticketStatusBadge(status){
 }
 
 function makeMateuszSubject(tk){
-  const dorm=dormName(tk.dorm_id);
-  const room=tk.room ? `pokój ${tk.room}` : 'bez numeru pokoju';
-  return `Zgłoszenie problemu - ${room} przy ${dorm}`;
+  const dorm = dormName(tk.dorm_id);
+
+  let roomText = 'bez numeru pokoju';
+
+  if(tk.room){
+    if(tk.room.includes('/')){
+      const parts = tk.room.split('/');
+      roomText = `mieszkanie ${parts[0]}, pokój ${parts[1]}`;
+    }else{
+      roomText = `pokój ${tk.room}`;
+    }
+  }
+
+  return `Zgłoszenie problemu - ${roomText} przy ${dorm}`;
 }
 
 function makeMateuszBody(tk){
@@ -1722,7 +1733,11 @@ function makeMateuszBody(tk){
 przekazuję informację dotyczącą zgłoszenia w akademiku.
 
 Akademik: ${dormName(tk.dorm_id)}
-Pokój / mieszkanie: ${tk.room || '—'}
+${tk.room && tk.room.includes('/')
+  ? `Mieszkanie: ${tk.room.split('/')[0]}
+Pokój: ${tk.room.split('/')[1]}`
+  : `Pokój: ${tk.room || '—'}`
+}
 Kategoria: ${tk.category || 'Inne'}
 Priorytet: ${tk.priority || 'Normalny'}
 
