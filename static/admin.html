@@ -1207,7 +1207,8 @@ function renderDashboard(){
 ).length;
 
   const active=residents.filter(r=>r.status==='active').length;
-  const newT=tickets.filter(t=>t.status==='received').length;
+  const activeTickets=tickets.filter(t=>t.status==='w_trakcie').length;
+const solvedTickets=tickets.filter(t=>t.status==='done').length;
   const todayCount=calendarNotes.filter(n=>n.date===isoDate(warsawNow())&&!n.done).length;
 
   document.getElementById('stats').innerHTML=`
@@ -1222,9 +1223,13 @@ function renderDashboard(){
     </div>
 
     <div class="stat-card red">
-      <div class="stat-num">${newT}</div>
-      <div class="stat-label">${t('stat_tickets')}</div>
-    </div>
+  <div class="stat-num">${activeTickets}</div>
+  <div class="stat-label">Zgłoszenia</div>
+
+  <div style="font-size:11px;color:#666;margin-top:4px">
+    ✔ ${solvedTickets} rozwiązane
+  </div>
+</div>
 
     <div class="stat-card" style="border-top-color:#2563eb;cursor:pointer" onclick="openTasksModal()">
       <div class="stat-num" style="color:#2563eb">${calendarNotes.filter(n=>!n.done).length}</div>
@@ -1235,15 +1240,26 @@ function renderDashboard(){
   renderContractAlerts();
   renderCalendar();
 
-  const dashTickets = document.getElementById('dash-tickets');
-  if(dashTickets){
-    dashTickets.innerHTML=tickets.slice(-4).reverse().map(tk=>`
-      <div class="info-card red">
-        <h4>${dormName(tk.dorm_id)}${tk.room?' — pok.'+tk.room:''}</h4>
-        <p>${tk.description.substring(0,80)}</p>
-        ${statusBadge(tk.status)}
-      </div>`).join('')||'<div class="empty">Brak</div>';
-  }
+  document.getElementById('dash-tickets').innerHTML=`
+  <div class="info-card">
+    <h4>🔧 Statystyka zgłoszeń</h4>
+
+    <p>
+      W trakcie:
+      <b style="color:#f59e0b">${activeTickets}</b>
+    </p>
+
+    <p>
+      Rozwiązane:
+      <b style="color:#10b981">${solvedTickets}</b>
+    </p>
+
+    <p>
+      Wszystkie:
+      <b>${tickets.length}</b>
+    </p>
+  </div>
+`;
 
   renderTodayTasks();
   startTodayClock();
