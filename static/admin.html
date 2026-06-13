@@ -1917,24 +1917,79 @@ function updateMrFloors() {
 function updateMrRooms() {
   const dormId = parseInt(document.getElementById('mr-dorm').value);
   const floor = document.getElementById('mr-floor').value;
+  const gender = document.getElementById('mr-gender').value;
+  const checkin = document.getElementById('mr-checkin').value;
+  const checkinDate = checkin ? new Date(checkin) : null;
+
   const structure = roomsStructure[dormId] || {};
   const rooms = structure[floor] || {};
   const roomSel = document.getElementById('mr-room');
   roomSel.innerHTML = '<option value="">— wybierz —</option>';
 
   Object.entries(rooms).forEach(([name, info]) => {
-    const occupied = residents.filter(r =>
-      r.dorm_id == dormId && r.floor == floor && r.room === name && r.status === 'active'
-    ).length;
+    const activeRes = residents.filter(r =>
+      r.dorm_id == dormId &&
+      String(r.floor) == String(floor) &&
+      r.room === name &&
+      r.status === 'active'
+    );
+
+    const stillActive = activeRes.filter(r => {
+      if (!checkinDate) return true;
+      if (!r.contract_end) return true;
+      return new Date(r.contract_end) >= checkinDate;
+    });
+
+    const leavingBefore = activeRes.filter(r => {
+      if (!checkinDate) return false;
+      if (!r.contract_end) return false;
+      return new Date(r.contract_end) < checkinDate;
+    });
+
+    const malesInRoom = stillActive.filter(r => r.gender === 'male').length;
+    const femalesInRoom = stillActive.filter(r => r.gender === 'female').length;
+
+    const genderConflict =
+      (gender === 'male' && femalesInRoom > 0) ||
+      (gender === 'female' && malesInRoom > 0);
+
     const reserved = reservations.filter(rv =>
-      rv.dorm_id == dormId && rv.floor == floor && rv.room === name &&
+      rv.dorm_id == dormId &&
+      String(rv.floor) == String(floor) &&
+      rv.room === name &&
       (rv.status === 'pending' || rv.status === 'confirmed')
     ).length;
-    const free = info.capacity - occupied - reserved;
-    const genderLabel = info.gender === 'male' ? '♂' : info.gender === 'female' ? '♀' : '';
-    roomSel.innerHTML += `<option value="${name}" ${free <= 0 ? 'disabled' : ''}>
-      ${name} ${genderLabel}(${occupied + reserved}/${info.capacity})${free <= 0 ? ' — PEŁNY' : ''}
-    </option>`;
+
+    const occupiedOnCheckin = stillActive.length + reserved;
+    const free = info.capacity - occupiedOnCheckin;
+
+    const genderLabel =
+      info.gender === 'male' ? '♂' :
+      info.gender === 'female' ? '♀' :
+      malesInRoom > 0 ? '♂' :
+      femalesInRoom > 0 ? '♀' : '';
+
+    let note = '';
+    if (genderConflict) {
+      note = ' — zła płeć';
+    } else if (free <= 0) {
+      note = ' — PEŁNY';
+    } else if (leavingBefore.length > 0) {
+      const dates = leavingBefore
+        .map(r => r.contract_end)
+        .filter(Boolean)
+        .sort();
+
+      const freeDate = dates[0];
+      const formatted = freeDate ? freeDate.split('-').reverse().slice(0,2).join('.') : '';
+
+      note = ` — wolne od ${formatted}`;
+    }
+
+    roomSel.innerHTML += `
+      <option value="${name}" ${(free <= 0 || genderConflict) ? 'disabled' : ''}>
+        ${name} ${genderLabel} (${occupiedOnCheckin}/${info.capacity})${note}
+      </option>`;
   });
 }
 
