@@ -618,19 +618,35 @@ tr:hover td{background:#fafbff}
     </div>
 
     <div class="form-row3">
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="m-email" placeholder="jan@example.com">
-      </div>
-      <div class="form-group">
-        <label>Telefon</label>
-        <input type="text" id="m-phone" placeholder="+48 000 000 000">
-      </div>
-      <div class="form-group">
-        <label>Telegram</label>
-        <input type="text" id="m-telegram" placeholder="@username">
-      </div>
-    </div>
+  <div class="form-group">
+    <label>Email 1</label>
+    <input type="email" id="m-email" placeholder="jan@example.com">
+  </div>
+
+  <div class="form-group">
+    <label>Email 2</label>
+    <input type="email" id="m-email2" placeholder="student@student.wsg.pl">
+  </div>
+
+  <div class="form-group">
+    <label>Email 3</label>
+    <input type="email" id="m-email3" placeholder="bit@edu.pl">
+  </div>
+</div>
+
+<div class="form-row3">
+  <div class="form-group">
+    <label>Telefon</label>
+    <input type="text" id="m-phone" placeholder="+48 000 000 000">
+  </div>
+
+  <div class="form-group">
+    <label>Telegram</label>
+    <input type="text" id="m-telegram" placeholder="@username">
+  </div>
+
+  <div></div>
+</div>
 
     <div style="background:#f7f9fc;border-radius:10px;padding:14px;margin-bottom:14px;border-left:4px solid var(--blue)">
       <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:10px;text-transform:uppercase">📋 Umowa najmu</div>
@@ -872,6 +888,12 @@ function renderNotifications(){
 }
 
 
+function getResidentEmails(r){
+  return [r.email, r.email2, r.email3]
+    .filter(e => e && e.trim())
+    .map(e => e.trim());
+}
+
 function getNotificationRecipients(){
   const type=document.getElementById('notif-target-type')?.value||'all';
   const dormId=document.getElementById('notif-dorm')?.value;
@@ -880,7 +902,7 @@ function getNotificationRecipients(){
 
   return residents.filter(r=>{
     if(r.status!=='active')return false;
-    if(!r.email)return false;
+    if(getResidentEmails(r).length===0)return false;
 
     if(type==='dorm' && dormId && r.dorm_id!=dormId)return false;
     if(type==='floor'){
@@ -918,12 +940,13 @@ function generateNotifications(){
       ? makePaymentDemandEmail(r, amount)
       : makePaymentReminderEmail(r, amount);
 
-    const mailto=`mailto:${r.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const emails=getResidentEmails(r).join(',');
+const mailto=`mailto:${emails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
     return `
       <div class="info-card">
         <h4>${r.full_name}</h4>
-        <p>${r.email}</p>
+        <p>${getResidentEmails(r).join('<br>')}</p>
         <a class="btn btn-primary btn-sm" href="${mailto}">📧 Otwórz email</a>
         <button class="btn btn-light btn-sm" onclick="copyText(\`${body.replace(/`/g,'\\`')}\`)">📋 Kopiuj</button>
       </div>
@@ -1652,9 +1675,11 @@ function openAddResident(){
   document.getElementById('m-id').value='';
   document.getElementById('modal-resident-title').textContent='👤 Dodaj mieszkańca';
   document.getElementById('m-name').value='';
-  document.getElementById('m-email').value='';
-  document.getElementById('m-phone').value='';
-  document.getElementById('m-telegram').value='';
+document.getElementById('m-email').value='';
+document.getElementById('m-email2').value='';
+document.getElementById('m-email3').value='';
+document.getElementById('m-phone').value='';
+document.getElementById('m-telegram').value='';
   document.getElementById('m-checkin').value='';
   document.getElementById('m-checkout').value='';
   document.getElementById('m-contract-date').value='';
@@ -1686,8 +1711,10 @@ function openEditResident(id){
   document.getElementById('modal-resident-title').textContent='✏️ Edytuj mieszkańca';
   document.getElementById('m-name').value=r.full_name||'';
   document.getElementById('m-gender').value=r.gender||'any';
-  document.getElementById('m-email').value=r.email||'';
-  document.getElementById('m-phone').value=r.phone||'';
+document.getElementById('m-email').value=r.email||'';
+document.getElementById('m-email2').value=r.email2||'';
+document.getElementById('m-email3').value=r.email3||'';
+document.getElementById('m-phone').value=r.phone||'';
   document.getElementById('m-telegram').value=r.telegram||'';
   document.getElementById('m-checkin').value=r.checkin||'';
   document.getElementById('m-checkout').value=r.checkout||'';
@@ -1735,7 +1762,9 @@ async function saveResident(){
   const room=document.getElementById('m-room').value;
   const gender=document.getElementById('m-gender').value;
   const email=document.getElementById('m-email').value;
-  const phone=document.getElementById('m-phone').value;
+const email2=document.getElementById('m-email2').value;
+const email3=document.getElementById('m-email3').value;
+const phone=document.getElementById('m-phone').value;
   const telegram=document.getElementById('m-telegram').value;
   const checkin=document.getElementById('m-checkin').value;
   const checkout=document.getElementById('m-checkout').value;
@@ -1752,7 +1781,7 @@ async function saveResident(){
     const d=await r.json();photoUrl=d.url||'';
   }
 
-  const payload={full_name:name,dorm_id:parseInt(dormId),floor,room,gender,email,phone,
+  const payload={full_name:name,dorm_id:parseInt(dormId),floor,room,gender,email,email2,email3,phone,
     telegram,checkin,checkout,contract_date:contractDate,contract_end:contractEnd,
     contract_num:contractNum,notes,
     ...(photoUrl?{photo_url:photoUrl}:{})};
