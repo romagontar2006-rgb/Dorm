@@ -642,6 +642,84 @@ tr:hover td{background:#fafbff}
   </div>
 </div>
 
+<div class="modal" id="modal-history">
+  <div class="modal-box" style="width:620px">
+    <h3 id="history-title">👤 Szczegóły mieszkańca</h3>
+    <input type="hidden" id="hist-id">
+
+    <div id="history-details-view"></div>
+
+    <div id="history-edit-view" style="display:none">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Imię i nazwisko</label>
+          <input type="text" id="hist-name">
+        </div>
+        <div class="form-group">
+          <label>Płeć</label>
+          <select id="hist-gender">
+            <option value="any">—</option>
+            <option value="male">♂ Mężczyzna</option>
+            <option value="female">♀ Kobieta</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row3">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="hist-email">
+        </div>
+        <div class="form-group">
+          <label>Telefon</label>
+          <input type="text" id="hist-phone">
+        </div>
+        <div class="form-group">
+          <label>Telegram</label>
+          <input type="text" id="hist-telegram">
+        </div>
+      </div>
+
+      <div class="form-row3">
+        <div class="form-group">
+          <label>Akademik</label>
+          <input type="text" id="hist-dorm" disabled>
+        </div>
+        <div class="form-group">
+          <label>Mieszkanie</label>
+          <input type="text" id="hist-floor">
+        </div>
+        <div class="form-group">
+          <label>Pokój</label>
+          <input type="text" id="hist-room">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Zameldowanie</label>
+          <input type="date" id="hist-checkin">
+        </div>
+        <div class="form-group">
+          <label>Wymeldowanie</label>
+          <input type="date" id="hist-checkout">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Notatki</label>
+        <textarea id="hist-notes" style="height:90px;width:100%;padding:10px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;outline:none;resize:none;font-family:inherit"></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('modal-history')">Zamknij</button>
+      <button class="btn btn-warning" id="hist-edit-btn" onclick="editHistoryMode()">✏️ Edytuj</button>
+      <button class="btn btn-primary" id="hist-save-btn" style="display:none" onclick="saveHistoryEdit()">✓ Zapisz</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let lang='pl', pwd='', dorms=[], reservations=[], residents=[], tickets=[], history=[], roomsStructure={};
 let selectedPhotoFile=null, selectedRoom=null, selectedFloor=null, selectedDormId=null;
@@ -845,8 +923,11 @@ function toggleContractGroup(id) {
 
 function renderDashboard(){
   const activeReservations = reservations.filter(r =>
-    r.status === 'pending' || r.status === 'confirmed'
-  ).length;
+  (r.status === 'pending' || r.status === 'confirmed') &&
+  r.dorm_id &&
+  r.floor &&
+  r.room
+).length;
 
   const active=residents.filter(r=>r.status==='active').length;
   const newT=tickets.filter(t=>t.status==='received').length;
@@ -1790,18 +1871,113 @@ function showContractDay(date){
 // ── ІСТОРІЯ ──
 function renderHistory(){
   const q=(document.getElementById('hist-search').value||'').toLowerCase();
-  const data=history.filter(h=>(h.full_name||'').toLowerCase().includes(q));
+  const data=history.filter(h=>
+    (`${h.full_name||''} ${h.email||''} ${h.phone||''} ${h.room||''}`).toLowerCase().includes(q)
+  );
+
   document.getElementById('hist-tbody').innerHTML=data.length?data.map(h=>`
     <tr>
       <td><b>#${h.id}</b></td>
-      <td><b>${h.full_name}</b></td>
+      <td>
+        <b>${h.full_name}</b><br>
+        <span style="font-size:11px;color:#888">${h.email||'—'} ${h.phone?`• ${h.phone}`:''}</span>
+      </td>
       <td style="font-size:12px">${dormName(h.dorm_id)}</td>
       <td>${h.room||'—'}</td>
       <td style="font-size:12px">${h.checkin||'—'}</td>
       <td style="font-size:12px">${h.checkout||h.eviction_date||'—'}</td>
-      <td>${statusBadge(h.status||'evicted')}</td>
+      <td>
+        <button class="btn btn-light btn-sm" onclick="openHistoryDetails(${h.id})">👁 Szczegóły</button>
+      </td>
     </tr>`).join(''):`<tr><td colspan="7" class="empty">Brak historii</td></tr>`;
 }
+
+function openHistoryDetails(id){
+  const h=history.find(x=>x.id===id);
+  if(!h)return;
+
+  document.getElementById('hist-id').value=id;
+  document.getElementById('history-title').textContent=`👤 ${h.full_name||'Szczegóły mieszkańca'}`;
+
+  const genderText=h.gender==='male'?'Mężczyzna':h.gender==='female'?'Kobieta':'—';
+
+  document.getElementById('history-details-view').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="info-card"><h4>📧 Email</h4><p>${h.email||'—'}</p></div>
+      <div class="info-card"><h4>📞 Telefon</h4><p>${h.phone||'—'}</p></div>
+      <div class="info-card"><h4>📱 Telegram</h4><p>${h.telegram||'—'}</p></div>
+      <div class="info-card"><h4>👤 Płeć</h4><p>${genderText}</p></div>
+      <div class="info-card"><h4>🏢 Akademik</h4><p>${dormName(h.dorm_id)}</p></div>
+      <div class="info-card"><h4>🚪 Pokój</h4><p>${h.floor||'—'} / ${h.room||'—'}</p></div>
+      <div class="info-card"><h4>📅 Zameldowanie</h4><p>${h.checkin||'—'}</p></div>
+      <div class="info-card"><h4>📅 Wymeldowanie</h4><p>${h.checkout||h.eviction_date||'—'}</p></div>
+      <div class="info-card"><h4>📄 Umowa do</h4><p>${h.contract_end||'—'}</p></div>
+      <div class="info-card"><h4>🔢 Numer umowy</h4><p>${h.contract_num||'—'}</p></div>
+    </div>
+    <div class="info-card" style="margin-top:12px">
+      <h4>📝 Notatki</h4>
+      <p>${h.notes||'—'}</p>
+    </div>
+  `;
+
+  document.getElementById('history-edit-view').style.display='none';
+  document.getElementById('history-details-view').style.display='block';
+  document.getElementById('hist-edit-btn').style.display='inline-flex';
+  document.getElementById('hist-save-btn').style.display='none';
+
+  document.getElementById('modal-history').classList.add('open');
+}
+
+function editHistoryMode(){
+  const id=parseInt(document.getElementById('hist-id').value);
+  const h=history.find(x=>x.id===id);
+  if(!h)return;
+
+  document.getElementById('hist-name').value=h.full_name||'';
+  document.getElementById('hist-gender').value=h.gender||'any';
+  document.getElementById('hist-email').value=h.email||'';
+  document.getElementById('hist-phone').value=h.phone||'';
+  document.getElementById('hist-telegram').value=h.telegram||'';
+  document.getElementById('hist-dorm').value=dormName(h.dorm_id);
+  document.getElementById('hist-floor').value=h.floor||'';
+  document.getElementById('hist-room').value=h.room||'';
+  document.getElementById('hist-checkin').value=h.checkin||'';
+  document.getElementById('hist-checkout').value=h.checkout||h.eviction_date||'';
+  document.getElementById('hist-notes').value=h.notes||'';
+
+  document.getElementById('history-details-view').style.display='none';
+  document.getElementById('history-edit-view').style.display='block';
+  document.getElementById('hist-edit-btn').style.display='none';
+  document.getElementById('hist-save-btn').style.display='inline-flex';
+}
+
+async function saveHistoryEdit(){
+  const id=parseInt(document.getElementById('hist-id').value);
+  const h=history.find(x=>x.id===id);
+  if(!h)return;
+
+  h.full_name=document.getElementById('hist-name').value.trim();
+  h.gender=document.getElementById('hist-gender').value;
+  h.email=document.getElementById('hist-email').value;
+  h.phone=document.getElementById('hist-phone').value;
+  h.telegram=document.getElementById('hist-telegram').value;
+  h.floor=document.getElementById('hist-floor').value;
+  h.room=document.getElementById('hist-room').value;
+  h.checkin=document.getElementById('hist-checkin').value;
+  h.checkout=document.getElementById('hist-checkout').value;
+  h.notes=document.getElementById('hist-notes').value;
+
+  await fetch(`/api/history?password=${pwd}`,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(history)
+  });
+
+  renderHistory();
+  openHistoryDetails(id);
+}
+
+
 // ── ТЕМА ──
 function toggleTheme(){
   const isDark = document.documentElement.getAttribute('data-theme')==='dark';
