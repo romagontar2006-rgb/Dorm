@@ -952,35 +952,47 @@ function generateNotifications(){
     return;
   }
 
+  // INFORMACJA WŁASNA — один лист до всіх
+  if(tpl==='custom'){
+    const subject=document.getElementById('custom-subject').value || 'Informacja';
+    const body=document.getElementById('custom-body').value || '';
+
+    const emails=[...new Set(
+      people.flatMap(r=>getResidentEmails(r))
+    )];
+
+    const mailto=`mailto:${emails.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    out.innerHTML=`
+      <div class="info-card" style="border-left-color:#2563eb">
+        <h4>📧 Informacja własna</h4>
+        <p><b>Odbiorcy:</b> ${emails.length} adresów</p>
+        <p style="font-size:12px;color:#666;max-height:120px;overflow:auto">${emails.join('<br>')}</p>
+
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <a class="btn btn-primary btn-sm" href="${mailto}">📧 Otwórz jeden email do wszystkich</a>
+          <button class="btn btn-light btn-sm" onclick="copyText(\`${emails.join(', ').replace(/`/g,'\\`')}\`)">📋 Kopiuj adresy</button>
+          <button class="btn btn-light btn-sm" onclick="copyText(\`${body.replace(/`/g,'\\`')}\`)">📋 Kopiuj treść</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // PŁATNOŚCI — osobny email do każdej osoby
   out.innerHTML=people.map(r=>{
-    let subject;
+    const subject = tpl==='payment_demand'
+      ? 'WEZWANIE DO NATYCHMIASTOWEJ ZAPŁATY'
+      : 'Payment Reminder / Przypomnienie o płatności';
 
-if(tpl==='custom'){
-  subject=document.getElementById('custom-subject').value || 'Informacja';
-}else{
-  subject = tpl==='payment_demand'
-    ? 'WEZWANIE DO NATYCHMIASTOWEJ ZAPŁATY'
-    : 'Payment Reminder / Przypomnienie o płatności';
-}
+    const amount = prompt(`Kwota zaległości dla ${r.full_name} (PLN):`, '850') || '850';
 
-    let amount = '';
-
-if(tpl !== 'custom'){
-  amount = prompt(`Kwota zaległości dla ${r.full_name} (PLN):`, '850') || '850';
-}
-
-    let body;
-
-if(tpl==='custom'){
-  body=document.getElementById('custom-body').value;
-}else{
-  body = tpl==='payment_demand'
-    ? makePaymentDemandEmail(r, amount)
-    : makePaymentReminderEmail(r, amount);
-}
+    const body = tpl==='payment_demand'
+      ? makePaymentDemandEmail(r, amount)
+      : makePaymentReminderEmail(r, amount);
 
     const emails=getResidentEmails(r).join(',');
-const mailto=`mailto:${emails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const mailto=`mailto:${emails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
     return `
       <div class="info-card">
