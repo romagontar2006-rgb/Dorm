@@ -1643,9 +1643,34 @@ function openAddTicket(){
   });
 
   document.getElementById('new-ticket-room').value='';
+  updateTicketFlats();
   document.getElementById('new-ticket-description').value='';
 
   document.getElementById('modal-ticket-add').classList.add('open');
+}
+
+
+function updateTicketFlats(){
+  const dormId = parseInt(document.getElementById('new-ticket-dorm').value);
+  const wrap = document.getElementById('new-ticket-flat-wrap');
+  const flatSel = document.getElementById('new-ticket-flat');
+
+  flatSel.innerHTML = '';
+
+  if(dormId === 1){
+    wrap.style.display = 'block';
+    ['1','2','3','4','5','6','7','8'].forEach(f=>{
+      flatSel.innerHTML += `<option value="${f}">Mieszkanie ${f}</option>`;
+    });
+  } else if(dormId === 2){
+    wrap.style.display = 'block';
+    ['2','3'].forEach(f=>{
+      flatSel.innerHTML += `<option value="${f}">Mieszkanie ${f}</option>`;
+    });
+  } else {
+    wrap.style.display = 'none';
+    flatSel.innerHTML = '';
+  }
 }
 
 
@@ -1653,7 +1678,9 @@ async function saveNewTicket(){
 
   const data={
     dorm_id:parseInt(document.getElementById('new-ticket-dorm').value),
-    room:document.getElementById('new-ticket-room').value,
+    room: document.getElementById('new-ticket-flat-wrap').style.display !== 'none'
+  ? `${document.getElementById('new-ticket-flat').value}/${document.getElementById('new-ticket-room').value}`
+  : document.getElementById('new-ticket-room').value,
     category:document.getElementById('new-ticket-category').value,
     priority:document.getElementById('new-ticket-priority').value,
     description:document.getElementById('new-ticket-description').value,
@@ -2504,14 +2531,19 @@ if(gender === 'female' && malesInRoom > 0){
     <h3>➕ Nowe zgłoszenie</h3>
 
     <div class="form-group">
-      <label>Akademik</label>
-      <select id="new-ticket-dorm"></select>
-    </div>
+  <label>Akademik</label>
+  <select id="new-ticket-dorm" onchange="updateTicketFlats()"></select>
+</div>
 
-    <div class="form-group">
-      <label>Pokój</label>
-      <input type="text" id="new-ticket-room">
-    </div>
+<div class="form-group" id="new-ticket-flat-wrap" style="display:none">
+  <label>Mieszkanie</label>
+  <select id="new-ticket-flat"></select>
+</div>
+
+<div class="form-group">
+  <label>Pokój</label>
+  <input type="text" id="new-ticket-room" placeholder="np. 5-B">
+</div>
 
     <div class="form-group">
       <label>Kategoria</label>
