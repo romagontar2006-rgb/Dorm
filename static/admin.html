@@ -1835,32 +1835,33 @@ function suggestRoom() {
 
   const structure = roomsStructure[dormId] || {};
   const checkinDate = new Date(checkin);
-
-  // Знаходимо всі вільні кімнати
   const suggestions = [];
 
   Object.entries(structure).forEach(([floor, rooms]) => {
     Object.entries(rooms).forEach(([roomName, info]) => {
-      // Перевірка статі кімнати
       if (info.gender !== 'any' && gender !== 'any' && info.gender !== gender) return;
 
-      // Активні мешканці
+      const activeRes = residents.filter(r =>
+        r.dorm_id == dormId &&
+        String(r.floor) == String(floor) &&
+        r.room === roomName &&
+        r.status === 'active'
+      );
 
-      const activeAtCheckin = activeRes.filter(r=>{
-  if(!r.contract_end)return true;
-  return new Date(r.contract_end) >= checkinDate;
-});
+      const activeAtCheckin = activeRes.filter(r => {
+        if (!r.contract_end) return true;
+        return new Date(r.contract_end) >= checkinDate;
+      });
 
-const malesInRoom = activeAtCheckin.filter(r=>r.gender==='male').length;
-const femalesInRoom = activeAtCheckin.filter(r=>r.gender==='female').length;
+      const malesInRoom = activeAtCheckin.filter(r => r.gender === 'male').length;
+      const femalesInRoom = activeAtCheckin.filter(r => r.gender === 'female').length;
 
-if(gender==='male' && femalesInRoom>0)return;
-if(gender==='female' && malesInRoom>0)return;
+      if (gender === 'male' && femalesInRoom > 0) return;
+      if (gender === 'female' && malesInRoom > 0) return;
 
-      // Активні резервації
       const activeReservations = reservations.filter(rv =>
         rv.dorm_id == dormId &&
-        rv.floor == floor &&
+        String(rv.floor) == String(floor) &&
         rv.room === roomName &&
         (rv.status === 'pending' || rv.status === 'confirmed')
       );
@@ -1868,17 +1869,13 @@ if(gender==='female' && malesInRoom>0)return;
       const occupiedCount = activeAtCheckin.length + activeReservations.length;
       const freeSlots = info.capacity - occupiedCount;
 
-      // Перевіряємо чи будуть вільні місця до дати заїзду
       const soonFree = activeRes.filter(r => {
         if (!r.contract_end) return false;
-        const endDate = new Date(r.contract_end);
-        return endDate <= checkinDate;
+        return new Date(r.contract_end) < checkinDate;
       }).length;
 
-      const effectiveFree = freeSlots + soonFree;
-
-      if (effectiveFree > 0) {
-        suggestions.push({ floor, roomName, info, freeSlots, soonFree, effectiveFree });
+      if (freeSlots > 0) {
+        suggestions.push({ floor, roomName, info, freeSlots, soonFree });
       }
     });
   });
@@ -1888,12 +1885,13 @@ if(gender==='female' && malesInRoom>0)return;
     return;
   }
 
-  // Сортуємо — спочатку ті що вільні зараз
-  suggestions.sort((a, b) => b.freeSlots - a.freeSlots);
+  suggestions.sort((a, b) => b.freeSlots - a.freeSlots || b.soonFree - a.soonFree);
   const best = suggestions[0];
 
   suggEl.innerHTML = `
-    <span style="color:var(--green)">✅ Sugerowany pokój: <b>${best.roomName}</b> (mieszkanie ${best.floor})</span>
+    <span style="color:var(--green)">
+      ✅ Sugerowany pokój: <b>${best.roomName}</b> (mieszkanie ${best.floor})
+    </span>
     ${best.soonFree > 0 ? `<span style="color:var(--orange);margin-left:8px">⚠️ ${best.soonFree} miejsce zwolni się przed przyjazdem</span>` : ''}
     <button class="btn btn-light btn-sm" style="margin-left:8px" onclick="applySuggestion('${best.floor}','${best.roomName}')">Zastosuj</button>
     <br><span style="color:#888;font-size:11px">Wszystkich opcji: ${suggestions.length}</span>`;
