@@ -429,7 +429,13 @@ tr:hover td{background:#fafbff}
 
       <!-- ЗАЯВКИ -->
       <div class="page" id="page-tickets">
-        <div class="section-title"><span data-t="tickets_title">Zgłoszenia problemów</span></div>
+        <div class="section-title">
+  <span>Zgłoszenia</span>
+
+  <button class="btn btn-primary" onclick="openAddTicket()">
+    ➕ Dodaj zgłoszenie
+  </button>
+</div>
         <div class="filter-bar">
           <input type="text" id="tick-search" placeholder="🔍 Szukaj..." oninput="renderTickets()">
           <select id="tick-filter" onchange="renderTickets()">
@@ -1626,6 +1632,50 @@ function renderTickets(){
     </tr>`).join(''):`<tr><td colspan="8" class="empty">Brak zgłoszeń</td></tr>`;
 }
 
+function openAddTicket(){
+
+  const sel=document.getElementById('new-ticket-dorm');
+
+  sel.innerHTML='';
+
+  dorms.forEach(d=>{
+    sel.innerHTML+=`<option value="${d.id}">${d.name}</option>`;
+  });
+
+  document.getElementById('new-ticket-room').value='';
+  document.getElementById('new-ticket-description').value='';
+
+  document.getElementById('modal-ticket-add').classList.add('open');
+}
+
+
+async function saveNewTicket(){
+
+  const data={
+    dorm_id:parseInt(document.getElementById('new-ticket-dorm').value),
+    room:document.getElementById('new-ticket-room').value,
+    category:document.getElementById('new-ticket-category').value,
+    priority:document.getElementById('new-ticket-priority').value,
+    description:document.getElementById('new-ticket-description').value,
+    status:'inprogress'
+  };
+
+  await fetch(`/api/tickets?password=${pwd}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
+  });
+
+  tickets=await fetch(`/api/tickets?password=${pwd}`).then(r=>r.json());
+
+  closeModal('modal-ticket-add');
+
+  renderTickets();
+  renderDashboard();
+}
+
+
+
 function ticketStatusBadge(status){
   if(status==='solved'){
     return '<span class="status-badge status-solved">Zrobione</span>';
@@ -2446,6 +2496,63 @@ if(gender === 'female' && malesInRoom > 0){
     </div>
   </div>
 </div>
+
+
+<div class="modal" id="modal-ticket-add">
+  <div class="modal-box">
+
+    <h3>➕ Nowe zgłoszenie</h3>
+
+    <div class="form-group">
+      <label>Akademik</label>
+      <select id="new-ticket-dorm"></select>
+    </div>
+
+    <div class="form-group">
+      <label>Pokój</label>
+      <input type="text" id="new-ticket-room">
+    </div>
+
+    <div class="form-group">
+      <label>Kategoria</label>
+      <select id="new-ticket-category">
+        <option>Elektryka</option>
+        <option>Hydraulika</option>
+        <option>Internet</option>
+        <option>Meble</option>
+        <option>Drzwi / zamek</option>
+        <option>Ogrzewanie</option>
+        <option>Inne</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Priorytet</label>
+      <select id="new-ticket-priority">
+        <option>Normalny</option>
+        <option>Pilny</option>
+        <option>Krytyczny</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Opis problemu</label>
+      <textarea id="new-ticket-description"></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('modal-ticket-add')">
+        Anuluj
+      </button>
+
+      <button class="btn btn-primary" onclick="saveNewTicket()">
+        Zapisz
+      </button>
+    </div>
+
+  </div>
+</div>
+
 
 </body>
 </html>
