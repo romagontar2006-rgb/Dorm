@@ -198,7 +198,7 @@ def get_reservations():
 def add_reservation(data):
     items = get_reservations()
     data["id"] = len(items) + 1
-    data["status"] = "pending"
+    data["status"] = data.get("status", "pending")
     data["created"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     items.append(data)
     _save("reservations", items)
@@ -207,7 +207,7 @@ def add_reservation(data):
 def update_reservation_status(res_id, status):
     items = get_reservations()
     for r in items:
-        if r["id"] == res_id:
+        if int(r["id"]) == int(res_id):
             r["status"] = status
     _save("reservations", items)
 

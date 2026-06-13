@@ -1224,10 +1224,14 @@ function openEditReservation(id){
 }
 
 async function cancelReservation(id){
-  if(!confirm('Usunąć / anulować rezerwację?'))return;
+  if(!confirm('Usunąć rezerwację?')) return;
 
-  await fetch(`/api/reservations/${id}?status=rejected&password=${pwd}`,{method:'PATCH'});
-  reservations=await fetch(`/api/reservations?password=${pwd}`).then(r=>r.json());
+  await fetch(`/api/reservations/${id}?status=rejected&password=${pwd}`, {
+    method: 'PATCH'
+  });
+
+  reservations = await fetch(`/api/reservations?password=${pwd}`).then(r=>r.json());
+
   renderResidents();
   renderDashboard();
 }
@@ -1280,11 +1284,25 @@ function renderResidents(){
           <div class="room-residents">`;
 
         roomRes.forEach(r=>{
+          const gIcon = r.gender === 'male' ? '♂' : r.gender === 'female' ? '♀' : '';
+const gColor = r.gender === 'male' ? '#1e40af' : r.gender === 'female' ? '#9d174d' : '#888';
+
+let contractAlert = '';
+if(r.contract_end){
+  const daysLeft = Math.ceil((new Date(r.contract_end) - new Date()) / (1000*60*60*24));
+  if(daysLeft <= 30 && daysLeft > 0){
+    contractAlert = `<br><span style="color:var(--orange);font-size:10px">⚠️ umowa za ${daysLeft} dni</span>`;
+  }else if(daysLeft <= 0){
+    contractAlert = `<br><span style="color:var(--red);font-size:10px">❌ umowa wygasła</span>`;
+  }
+}
           html+=`
           <div class="room-resident-name" style="display:flex;justify-content:space-between;align-items:center;gap:4px;padding:4px 0;border-top:1px solid #f0f0f0;margin-top:2px">
             <div style="flex:1">
-              <span style="font-size:12px">${r.full_name}</span>
-            </div>
+  <span style="color:${gColor};font-weight:700;margin-right:3px">${gIcon}</span>
+  <span style="font-size:12px">${r.full_name}</span>
+  ${contractAlert}
+</div>
             <div style="display:flex;gap:3px">
               <button class="btn btn-light btn-sm" style="padding:2px 6px;font-size:10px" onclick="openEditResident(${r.id})">✏️</button>
               <button class="btn btn-danger btn-sm" style="padding:2px 6px;font-size:10px" onclick="evictResident(${r.id})">✗</button>
@@ -1927,6 +1945,26 @@ async function saveReservationAdmin(){
     alert('Wypełnij: imię, datę przyjazdu, akademik, mieszkanie i pokój!');
     return;
   }
+
+  const activeInRoom = residents.filter(r =>
+  r.dorm_id == dormId &&
+  String(r.floor) == String(floor) &&
+  r.room === room &&
+  r.status === 'active'
+);
+
+const malesInRoom = activeInRoom.filter(r => r.gender === 'male').length;
+const femalesInRoom = activeInRoom.filter(r => r.gender === 'female').length;
+
+if(gender === 'male' && femalesInRoom > 0){
+  alert('Nie można dodać mężczyzny do pokoju, w którym mieszka kobieta.');
+  return;
+}
+
+if(gender === 'female' && malesInRoom > 0){
+  alert('Nie można dodać kobiety do pokoju, w którym mieszka mężczyzna.');
+  return;
+}
 
   const parts=name.split(' ');
   const data={
