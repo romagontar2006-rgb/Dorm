@@ -320,7 +320,6 @@ tr:hover td{background:#fafbff}
       <div class="sidebar-section">GŁÓWNE</div>
       <button class="sidebar-btn active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
       <div class="sidebar-section">ZARZĄDZANIE</div>
-      <button class="sidebar-btn" onclick="showPage('reservations',this)">🏠 <span data-t="menu_reservations">Rezerwacje</span></button>
       <button class="sidebar-btn" onclick="showPage('residents',this)">👥 <span data-t="menu_residents">Mieszkańcy</span></button>
       <button class="sidebar-btn" onclick="showPage('tickets',this)">⚠️ <span data-t="menu_tickets">Zgłoszenia</span></button>
       <button class="sidebar-btn" onclick="showPage('dorms',this)">🏢 <span data-t="menu_dorms">Akademiki</span></button>
@@ -416,9 +415,12 @@ tr:hover td{background:#fafbff}
       <!-- МЕШКАНЦІ -->
       <div class="page" id="page-residents">
         <div class="section-title">
-          <span data-t="residents_title">Mieszkańcy</span>
-          <button class="btn btn-primary" onclick="openAddResident()">+ Dodaj mieszkańca</button>
-        </div>
+  <span data-t="residents_title">Mieszkańcy</span>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-primary" onclick="openAddResident()">+ Dodaj mieszkańca</button>
+    <button class="btn btn-light" onclick="openAddReservation()">🔵 Dodaj rezerwację</button>
+  </div>
+</div>
         <div class="filter-bar">
           <input type="text" id="res-search2" placeholder="🔍 Szukaj po nazwisku, pokoju..." oninput="renderResidents()">
           <select id="dorm-filter2" onchange="renderResidents()">
@@ -1192,6 +1194,46 @@ function updateRooms(){
   }).join('');
 }
 
+function openEditReservation(id){
+  const r=reservations.find(x=>x.id===id);
+  if(!r)return;
+
+  document.getElementById('mr-id').value=r.id;
+  document.getElementById('modal-res-title').textContent='✏️ Edytuj rezerwację';
+  document.getElementById('mr-name').value=r.full_name || `${r.first_name||''} ${r.last_name||''}`.trim();
+  document.getElementById('mr-gender').value=r.gender||'any';
+  document.getElementById('mr-email').value=r.email||'';
+  document.getElementById('mr-phone').value=r.phone||'';
+  document.getElementById('mr-checkin').value=r.checkin||'';
+  document.getElementById('mr-checkout').value=r.checkout||'';
+  document.getElementById('mr-notes').value=r.notes||'';
+
+  const dormSel=document.getElementById('mr-dorm');
+  dormSel.innerHTML='<option value="">— wybierz —</option>';
+  dorms.forEach(d=>{dormSel.innerHTML+=`<option value="${d.id}">${d.name}</option>`;});
+  dormSel.value=r.dorm_id||'';
+
+  updateMrFloors();
+  setTimeout(()=>{
+    document.getElementById('mr-floor').value=String(r.floor||'');
+    updateMrRooms();
+    setTimeout(()=>{document.getElementById('mr-room').value=r.room||'';},60);
+  },60);
+
+  document.getElementById('modal-reservation').classList.add('open');
+}
+
+async function cancelReservation(id){
+  if(!confirm('Usunąć / anulować rezerwację?'))return;
+
+  await fetch(`/api/reservations/${id}?status=rejected&password=${pwd}`,{method:'PATCH'});
+  reservations=await fetch(`/api/reservations?password=${pwd}`).then(r=>r.json());
+  renderResidents();
+  renderDashboard();
+}
+
+
+
 function renderResidents(){
   const q=(document.getElementById('res-search2').value||'').toLowerCase();
   const df=document.getElementById('dorm-filter2').value;
@@ -1208,12 +1250,7 @@ function renderResidents(){
       html+=`<div class="floor-section"><div class="floor-title">Mieszkanie / Sekcja: ${floor}</div><div class="rooms-grid">`;
 
       Object.entries(rooms).forEach(([roomName,info])=>{
-        const roomRes=residents.filter(r=>
-          r.dorm_id==dorm.id &&
-          String(r.floor)==String(floor) &&
-          r.room===roomName &&
-          r.status==='active'
-        );
+        const roomRes=residents.filter(r=>r.dorm_id==dorm.id&&String(r.floor)==String(floor)&&r.room===roomName&&r.status==='active');
 
         const roomReservations=reservations.filter(rv=>
           rv.dorm_id==dorm.id &&
@@ -1222,20 +1259,9 @@ function renderResidents(){
           (rv.status==='pending'||rv.status==='confirmed')
         );
 
-        const filtered=roomRes.filter(r=>(r.full_name||'').toLowerCase().includes(q));
         const occupied=roomRes.length;
         const reserved=roomReservations.length;
-        const totalUsed=occupied+reserved;
-        const full=totalUsed>=info.capacity;
-
-        const males=roomRes.filter(r=>r.gender==='male').length;
-        const females=roomRes.filter(r=>r.gender==='female').length;
-
-        let genderIcon='';
-        if(info.gender==='male') genderIcon='<span class="gender-badge gender-male">♂ tylko chłopcy</span>';
-        else if(info.gender==='female') genderIcon='<span class="gender-badge gender-female">♀ tylko dziewczyny</span>';
-        else if(males>0&&females===0) genderIcon='<span class="gender-badge gender-male">♂ chłopcy</span>';
-        else if(females>0&&males===0) genderIcon='<span class="gender-badge gender-female">♀ dziewczyny</span>';
+        const full=(occupied+reserved)>=info.capacity;
 
         html+=`
         <div class="room-card ${full?'full':'has-residents'}"
@@ -1243,30 +1269,23 @@ function renderResidents(){
 
           <button class="room-add-btn" onclick="openAddResidentRoom(${dorm.id},'${floor}','${roomName}')" title="Dodaj">+</button>
 
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div class="room-name">${roomName}</div>
-            ${genderIcon}
           </div>
 
           <div class="room-capacity" style="color:${reserved>0?'#2563eb':full?'var(--red)':occupied>0?'var(--green)':'#888'}">
-            ${occupied}/${info.capacity}
-            ${reserved>0 ? ` + ${reserved} REZ` : ''}
-            ${full?' — PEŁNY':''}
+            ${occupied}/${info.capacity}${reserved>0 ? ` + ${reserved} REZ` : ''} ${full?'— PEŁNY':''}
           </div>
 
           <div class="room-residents">`;
 
-        filtered.forEach(r=>{
-          const gIcon=r.gender==='male'?'♂':r.gender==='female'?'♀':'';
-          const gColor=r.gender==='male'?'#1e40af':r.gender==='female'?'#9d174d':'#888';
-
+        roomRes.forEach(r=>{
           html+=`
           <div class="room-resident-name" style="display:flex;justify-content:space-between;align-items:center;gap:4px;padding:4px 0;border-top:1px solid #f0f0f0;margin-top:2px">
-            <div style="flex:1;min-width:0">
-              <span style="color:${gColor};font-weight:700;margin-right:3px">${gIcon}</span>
+            <div style="flex:1">
               <span style="font-size:12px">${r.full_name}</span>
             </div>
-            <div style="display:flex;gap:3px;flex-shrink:0">
+            <div style="display:flex;gap:3px">
               <button class="btn btn-light btn-sm" style="padding:2px 6px;font-size:10px" onclick="openEditResident(${r.id})">✏️</button>
               <button class="btn btn-danger btn-sm" style="padding:2px 6px;font-size:10px" onclick="evictResident(${r.id})">✗</button>
             </div>
@@ -1277,23 +1296,16 @@ function renderResidents(){
           const resName=rv.full_name || `${rv.first_name||''} ${rv.last_name||''}`.trim() || 'Rezerwacja';
 
           html+=`
-          <div style="
-            margin-top:6px;
-            padding:7px 8px;
-            border-radius:8px;
-            background:#dbeafe;
-            border:1px solid #60a5fa;
-            color:#1e40af;
-            font-size:12px;
-            font-weight:700;
-          ">
+          <div style="margin-top:6px;padding:7px 8px;border-radius:8px;background:#dbeafe;border:1px solid #60a5fa;color:#1e40af;font-size:12px;font-weight:700">
             🔵 REZERWACJA — ${resName}
             <br>
             <span style="font-size:10px;color:#475569;font-weight:400">
               od ${rv.checkin||'—'} ${rv.gender==='male'?'• ♂':rv.gender==='female'?'• ♀':''}
             </span>
-            <div style="margin-top:5px">
+            <div style="display:flex;gap:5px;margin-top:6px">
               <button class="btn btn-success btn-sm" style="padding:3px 7px;font-size:10px" onclick="checkInFromReservation(${rv.id})">🏠 Zasel</button>
+              <button class="btn btn-light btn-sm" style="padding:3px 7px;font-size:10px" onclick="openEditReservation(${rv.id})">✏️</button>
+              <button class="btn btn-danger btn-sm" style="padding:3px 7px;font-size:10px" onclick="cancelReservation(${rv.id})">✗</button>
             </div>
           </div>`;
         });
@@ -1433,7 +1445,7 @@ async function saveResident(){
   // Якщо заселяємо з резервації — оновлюємо її статус
   const fromRes = document.getElementById('m-id').dataset.fromReservation;
   if (fromRes) {
-    await fetch(`/api/reservations/${fromRes}?status=confirmed&password=${pwd}`, { method: 'PATCH' });
+    await fetch(`/api/reservations/${fromRes}?status=checked_in&password=${pwd}`, { method: 'PATCH' });
     reservations = await fetch(`/api/reservations?password=${pwd}`).then(r => r.json());
     delete document.getElementById('m-id').dataset.fromReservation;
   }
@@ -1804,17 +1816,16 @@ function suggestRoom() {
 
       // Активні мешканці
 
-      const activeRes = residents.filter(r =>
-        r.dorm_id == dormId &&
-        String(r.floor) == String(floor) &&
-        r.room === roomName &&
-        r.status === 'active'
-      );
-      const malesInRoom = activeRes.filter(r => r.gender === 'male').length;
-const femalesInRoom = activeRes.filter(r => r.gender === 'female').length;
+      const activeAtCheckin = activeRes.filter(r=>{
+  if(!r.contract_end)return true;
+  return new Date(r.contract_end) >= checkinDate;
+});
 
-if (gender === 'male' && femalesInRoom > 0) return;
-if (gender === 'female' && malesInRoom > 0) return;
+const malesInRoom = activeAtCheckin.filter(r=>r.gender==='male').length;
+const femalesInRoom = activeAtCheckin.filter(r=>r.gender==='female').length;
+
+if(gender==='male' && femalesInRoom>0)return;
+if(gender==='female' && malesInRoom>0)return;
 
       // Активні резервації
       const activeReservations = reservations.filter(rv =>
@@ -1824,7 +1835,7 @@ if (gender === 'female' && malesInRoom > 0) return;
         (rv.status === 'pending' || rv.status === 'confirmed')
       );
 
-      const occupiedCount = activeRes.length + activeReservations.length;
+      const occupiedCount = activeAtCheckin.length + activeReservations.length;
       const freeSlots = info.capacity - occupiedCount;
 
       // Перевіряємо чи будуть вільні місця до дати заїзду
@@ -1899,46 +1910,54 @@ function updateMrRooms() {
   });
 }
 
-async function saveReservationAdmin() {
-  const name = document.getElementById('mr-name').value.trim();
-  const gender = document.getElementById('mr-gender').value;
-  const email = document.getElementById('mr-email').value;
-  const phone = document.getElementById('mr-phone').value;
-  const checkin = document.getElementById('mr-checkin').value;
-  const checkout = document.getElementById('mr-checkout').value;
-  const dormId = document.getElementById('mr-dorm').value;
-  const floor = document.getElementById('mr-floor').value;
-  const room = document.getElementById('mr-room').value;
-  const notes = document.getElementById('mr-notes').value;
+async function saveReservationAdmin(){
+  const id=document.getElementById('mr-id').value;
+  const name=document.getElementById('mr-name').value.trim();
+  const gender=document.getElementById('mr-gender').value;
+  const email=document.getElementById('mr-email').value;
+  const phone=document.getElementById('mr-phone').value;
+  const checkin=document.getElementById('mr-checkin').value;
+  const checkout=document.getElementById('mr-checkout').value;
+  const dormId=document.getElementById('mr-dorm').value;
+  const floor=document.getElementById('mr-floor').value;
+  const room=document.getElementById('mr-room').value;
+  const notes=document.getElementById('mr-notes').value;
 
-  if (!name || !checkin || !dormId || !room) {
-    alert('Wypełnij: imię, datę przyjazdu, akademik i pokój!');
+  if(!name||!checkin||!dormId||!floor||!room){
+    alert('Wypełnij: imię, datę przyjazdu, akademik, mieszkanie i pokój!');
     return;
   }
 
-  const nameParts = name.split(' ');
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.slice(1).join(' ') || '';
+  const parts=name.split(' ');
+  const data={
+    first_name:parts[0]||'',
+    last_name:parts.slice(1).join(' ')||'',
+    full_name:name,
+    gender,email,phone,checkin,checkout,
+    dorm_id:parseInt(dormId),
+    floor:String(floor),
+    room,
+    is_wsg:true,
+    notes,
+    status:'confirmed'
+  };
 
-  await fetch(`/api/reservations?password=${pwd}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      first_name: firstName,
-      last_name: lastName,
-      full_name: name,
-      gender, email, phone, checkin, checkout,
-      dorm_id: parseInt(dormId),
-      floor, room,
-      is_wsg: true,
-      notes,
-      status: 'confirmed'
-    })
-  });
+  if(id){
+    await fetch(`/api/reservations/${id}?password=${pwd}`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data)
+    });
+  }else{
+    await fetch(`/api/reservations?password=${pwd}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data)
+    });
+  }
 
-  reservations = await fetch(`/api/reservations?password=${pwd}`).then(r => r.json());
+  reservations=await fetch(`/api/reservations?password=${pwd}`).then(r=>r.json());
   closeModal('modal-reservation');
-  renderReservations();
   renderResidents();
   renderDashboard();
 }

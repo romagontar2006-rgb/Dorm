@@ -145,13 +145,18 @@ class ChatMsg(BaseModel):
 class ReservationIn(BaseModel):
     first_name: str
     last_name: str
-    phone: str
-    email: str
-    is_wsg: bool
-    gender: str
+    phone: str = ""
+    email: str = ""
+    is_wsg: bool = True
+    gender: str = "any"
     dorm_id: int
+    floor: str = ""
+    room: str = ""
     checkin: str
-    checkout: str
+    checkout: str = ""
+    full_name: str = ""
+    notes: str = ""
+    status: str = "pending"
 
 class TicketIn(BaseModel):
     dorm_id: int
@@ -241,10 +246,10 @@ async def list_reservations(password: str = ""):
     check_admin(password)
     return db.get_reservations()
 
-@app.patch("/api/reservations/{res_id}")
-async def patch_reservation(res_id: int, status: str, password: str = ""):
+@app.put("/api/reservations/{res_id}")
+async def update_reservation(res_id: int, data: dict, password: str = ""):
     check_admin(password)
-    db.update_reservation_status(res_id, status)
+    db.update_reservation(res_id, data)
     return {"ok": True}
 
 # ── МЕШКАНЦІ ──
