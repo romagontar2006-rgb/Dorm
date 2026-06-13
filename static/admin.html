@@ -327,7 +327,65 @@ tr:hover td{background:#fafbff}
       <button class="sidebar-btn" onclick="showPage('email',this)">✉️ <span data-t="menu_email">Asystent Email</span></button>
       <div class="sidebar-section">HISTORIA</div>
       <button class="sidebar-btn" onclick="showPage('history',this)">📋 <span data-t="menu_history">Historia</span></button>
+      <button class="sidebar-btn" onclick="showPage('notifications',this)">
+  📧 Powiadomienia
+</button>
     </div>
+  <!-- POWIADOMIENIA -->
+<div class="page" id="page-notifications">
+  <div class="section-title">📧 Powiadomienia</div>
+
+  <div class="info-card">
+    <h4>1. Wybierz odbiorców</h4>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Typ odbiorców</label>
+        <select id="notif-target-type" onchange="renderNotifications()">
+          <option value="all">Wszyscy mieszkańcy</option>
+          <option value="dorm">Akademik</option>
+          <option value="floor">Mieszkanie / sekcja</option>
+          <option value="room">Pokój</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Akademik</label>
+        <select id="notif-dorm" onchange="renderNotifications()"></select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Mieszkanie / sekcja</label>
+        <input type="text" id="notif-floor" placeholder="np. 5" oninput="renderNotifications()">
+      </div>
+
+      <div class="form-group">
+        <label>Pokój</label>
+        <input type="text" id="notif-room" placeholder="np. 5B" oninput="renderNotifications()">
+      </div>
+    </div>
+
+    <div id="notif-recipients" style="margin-top:10px"></div>
+  </div>
+
+  <div class="info-card">
+    <h4>2. Wybierz szablon</h4>
+
+    <div class="form-group">
+      <label>Szablon wiadomości</label>
+      <select id="notif-template" onchange="renderNotifications()">
+        <option value="payment_reminder">Payment Reminder / Przypomnienie o płatności</option>
+        <option value="payment_demand">WEZWANIE DO NATYCHMIASTOWEJ ZAPŁATY</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary" onclick="generateNotifications()">📧 Generuj wiadomości</button>
+  </div>
+
+  <div id="notif-output"></div>
+</div>
     <div class="content">
 
       <!-- DASHBOARD -->
@@ -776,9 +834,148 @@ function showPage(id,btn){
   document.querySelectorAll('.sidebar-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   btn.classList.add('active');
-  const renders={dashboard:renderDashboard,reservations:renderReservations,residents:renderResidents,tickets:renderTickets,dorms:renderDormsAdmin,history:renderHistory};
+  const renders={
+  dashboard:renderDashboard,
+  reservations:renderReservations,
+  residents:renderResidents,
+  tickets:renderTickets,
+  dorms:renderDormsAdmin,
+  history:renderHistory,
+  notifications:renderNotifications
+};
   if(renders[id])renders[id]();
 }
+
+
+function renderNotifications(){
+  const dormSel=document.getElementById('notif-dorm');
+  if(!dormSel)return;
+
+  if(!dormSel.dataset.loaded){
+    dormSel.innerHTML='<option value="">— wybierz —</option>';
+    dorms.forEach(d=>dormSel.innerHTML+=`<option value="${d.id}">${d.name}</option>`);
+    dormSel.dataset.loaded='1';
+  }
+
+  const selected=getNotificationRecipients();
+
+  document.getElementById('notif-recipients').innerHTML=`
+    <div style="font-size:13px;color:#555">
+      Znaleziono: <b>${selected.length}</b> mieszkańców z emailem
+    </div>
+    ${selected.slice(0,10).map(r=>`
+      <div style="font-size:12px;color:#777;margin-top:4px">
+        ${r.full_name} — ${r.email||'brak emaila'}
+      </div>
+    `).join('')}
+  `;
+}
+
+
+function getNotificationRecipients(){
+  const type=document.getElementById('notif-target-type')?.value||'all';
+  const dormId=document.getElementById('notif-dorm')?.value;
+  const floor=(document.getElementById('notif-floor')?.value||'').trim();
+  const room=(document.getElementById('notif-room')?.value||'').trim();
+
+  return residents.filter(r=>{
+    if(r.status!=='active')return false;
+    if(!r.email)return false;
+
+    if(type==='dorm' && dormId && r.dorm_id!=dormId)return false;
+    if(type==='floor'){
+      if(dormId && r.dorm_id!=dormId)return false;
+      if(floor && String(r.floor)!==String(floor))return false;
+    }
+    if(type==='room'){
+      if(dormId && r.dorm_id!=dormId)return false;
+      if(floor && String(r.floor)!==String(floor))return false;
+      if(room && String(r.room)!==String(room))return false;
+    }
+
+    return true;
+  });
+}
+
+function generateNotifications(){
+  const people=getNotificationRecipients();
+  const tpl=document.getElementById('notif-template').value;
+  const out=document.getElementById('notif-output');
+
+  if(!people.length){
+    out.innerHTML='<div class="empty">Brak odbiorców z emailem</div>';
+    return;
+  }
+
+  out.innerHTML=people.map(r=>{
+    const subject = tpl==='payment_demand'
+      ? 'WEZWANIE DO NATYCHMIASTOWEJ ZAPŁATY'
+      : 'Payment Reminder / Przypomnienie o płatności';
+
+    const amount = prompt(`Kwota zaległości dla ${r.full_name} (PLN):`, '850') || '850';
+
+    const body = tpl==='payment_demand'
+      ? makePaymentDemandEmail(r, amount)
+      : makePaymentReminderEmail(r, amount);
+
+    const mailto=`mailto:${r.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    return `
+      <div class="info-card">
+        <h4>${r.full_name}</h4>
+        <p>${r.email}</p>
+        <a class="btn btn-primary btn-sm" href="${mailto}">📧 Otwórz email</a>
+        <button class="btn btn-light btn-sm" onclick="copyText(\`${body.replace(/`/g,'\\`')}\`)">📋 Kopiuj</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function makePaymentReminderEmail(r, amount){
+  const genderStart = r.gender==='male' ? 'Szanowny Panie' : 'Szanowna Pani';
+
+  return `${genderStart},
+
+zgodnie z naszymi danymi posiada Pan/Pani zaległość w opłatach za pobyt w Zespole Pokoi Akademickich przy ${dormName(r.dorm_id)}, pokój ${r.room}, w wysokości ${amount} PLN.
+
+Prosimy o niezwłoczne uregulowanie należności lub przesłanie potwierdzenia dokonania wpłaty, jeśli przelew został już zrealizowany.
+
+Jednocześnie przypominamy, że zgodnie z warunkami umowy opłata za zakwaterowanie powinna zostać wniesiona do 10. dnia każdego miesiąca.
+
+Z poważaniem,
+Administracja Akademików WSG`;
+}
+
+function makePaymentDemandEmail(r, amount){
+  const today=new Date().toLocaleDateString('pl-PL');
+  const genderStart = r.gender==='male' ? 'Szanowny Panie' : 'Szanowna Pani';
+
+  return `Data: ${today}
+
+${genderStart} ${r.full_name},
+
+pomimo wcześniejszych monitów oraz przypomnień kierowanych do Pana/Pani w sprawie zaległości w opłatach za zakwaterowanie w akademiku, do dnia dzisiejszego nie została uregulowana należność w wysokości ${amount} PLN.
+
+Na podstawie zapisów zawartej umowy najmu miejsca w pokojach studenckich, brak terminowego wnoszenia opłat stanowi naruszenie warunków korzystania z miejsca w akademiku.
+
+W związku z powyższym wzywamy do natychmiastowej wpłaty całej zaległej kwoty na dotychczasowy numer konta.
+
+Termin uregulowania płatności: 3 dni od daty otrzymania niniejszego pisma.
+
+Brak zapłaty w wyznaczonym terminie może skutkować wszczęciem procedury rozwiązania umowy zakwaterowania oraz usunięciem z akademika.
+
+Jeżeli należność została w międzyczasie uregulowana — prosimy o niezwłoczne przesłanie potwierdzenia przelewu na adres e-mail: dormitory@byd.pl.
+
+Z poważaniem,
+Administracja Akademików WSG`;
+}
+
+function copyText(text){
+  navigator.clipboard.writeText(text);
+  alert('Skopiowano');
+}
+
+
 
 // ── DASHBOARD ──
 // ── WARSAW TIME ──
