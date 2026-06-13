@@ -376,13 +376,30 @@ tr:hover td{background:#fafbff}
     <div class="form-group">
       <label>Szablon wiadomości</label>
       <select id="notif-template" onchange="renderNotifications()">
-        <option value="payment_reminder">Payment Reminder / Przypomnienie o płatności</option>
-        <option value="payment_demand">WEZWANIE DO NATYCHMIASTOWEJ ZAPŁATY</option>
-      </select>
+  <option value="payment_reminder">Payment Reminder / Przypomnienie o płatności</option>
+  <option value="payment_demand">WEZWANIE DO NATYCHMIASTOWEJ ZAPŁATY</option>
+  <option value="custom">Informacja własna</option>
+</select>
     </div>
 
     <button class="btn btn-primary" onclick="generateNotifications()">📧 Generuj wiadomości</button>
   </div>
+
+
+  <div id="custom-message-box" style="display:none;margin-top:15px">
+
+  <div class="form-group">
+    <label>Temat</label>
+    <input type="text" id="custom-subject">
+  </div>
+
+  <div class="form-group">
+    <label>Treść wiadomości</label>
+    <textarea id="custom-body"
+      style="height:220px;width:100%;padding:12px;border:1px solid #ddd;border-radius:8px"></textarea>
+  </div>
+
+</div>
 
   <div id="notif-output"></div>
 </div>
@@ -885,6 +902,11 @@ function renderNotifications(){
       </div>
     `).join('')}
   `;
+
+  const tpl=document.getElementById('notif-template')?.value;
+
+  document.getElementById('custom-message-box').style.display =
+    tpl==='custom' ? 'block' : 'none';
 }
 
 
@@ -930,15 +952,27 @@ function generateNotifications(){
   }
 
   out.innerHTML=people.map(r=>{
-    const subject = tpl==='payment_demand'
-      ? 'WEZWANIE DO NATYCHMIASTOWEJ ZAPŁATY'
-      : 'Payment Reminder / Przypomnienie o płatności';
+    let subject;
+
+if(tpl==='custom'){
+  subject=document.getElementById('custom-subject').value || 'Informacja';
+}else{
+  subject = tpl==='payment_demand'
+    ? 'WEZWANIE DO NATYCHMIASTOWEJ ZAPŁATY'
+    : 'Payment Reminder / Przypomnienie o płatności';
+}
 
     const amount = prompt(`Kwota zaległości dla ${r.full_name} (PLN):`, '850') || '850';
 
-    const body = tpl==='payment_demand'
-      ? makePaymentDemandEmail(r, amount)
-      : makePaymentReminderEmail(r, amount);
+    let body;
+
+if(tpl==='custom'){
+  body=document.getElementById('custom-body').value;
+}else{
+  body = tpl==='payment_demand'
+    ? makePaymentDemandEmail(r, amount)
+    : makePaymentReminderEmail(r, amount);
+}
 
     const emails=getResidentEmails(r).join(',');
 const mailto=`mailto:${emails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
