@@ -361,10 +361,7 @@ tr:hover td{background:#fafbff}
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div style="background:white;border-radius:14px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,0.07)">
-          <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:10px">🏠 Ostatnie rezerwacje</div>
-          <div id="dash-reservations"></div>
-        </div>
+        
         <div style="background:white;border-radius:14px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,0.07)">
           <div style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:10px">⚠️ Ostatnie zgłoszenia</div>
           <div id="dash-tickets"></div>
@@ -847,16 +844,30 @@ function toggleContractGroup(id) {
 
 
 function renderDashboard(){
-  const pending=reservations.filter(r=>r.status==='pending').length;
+  const activeReservations = reservations.filter(r =>
+    r.status === 'pending' || r.status === 'confirmed'
+  ).length;
+
   const active=residents.filter(r=>r.status==='active').length;
   const newT=tickets.filter(t=>t.status==='received').length;
   const todayCount=calendarNotes.filter(n=>n.date===isoDate(warsawNow())&&!n.done).length;
 
   document.getElementById('stats').innerHTML=`
-    <div class="stat-card"><div class="stat-num">${reservations.length}</div><div class="stat-label">${t('stat_reservations')}</div></div>
-    <div class="stat-card orange"><div class="stat-num">${pending}</div><div class="stat-label">${t('stat_pending')}</div></div>
-    <div class="stat-card green"><div class="stat-num">${active}</div><div class="stat-label">${t('stat_residents')}</div></div>
-    <div class="stat-card red"><div class="stat-num">${newT}</div><div class="stat-label">${t('stat_tickets')}</div></div>
+    <div class="stat-card">
+      <div class="stat-num">${activeReservations}</div>
+      <div class="stat-label">Aktywne rezerwacje</div>
+    </div>
+
+    <div class="stat-card green">
+      <div class="stat-num">${active}</div>
+      <div class="stat-label">${t('stat_residents')}</div>
+    </div>
+
+    <div class="stat-card red">
+      <div class="stat-num">${newT}</div>
+      <div class="stat-label">${t('stat_tickets')}</div>
+    </div>
+
     <div class="stat-card" style="border-top-color:#2563eb;cursor:pointer" onclick="openTasksModal()">
       <div class="stat-num" style="color:#2563eb">${calendarNotes.filter(n=>!n.done).length}</div>
       <div class="stat-label">Zadania</div>
@@ -866,11 +877,15 @@ function renderDashboard(){
   renderContractAlerts();
   renderCalendar();
 
-  document.getElementById('dash-reservations').innerHTML=reservations.slice(-4).reverse().map(r=>`
-    <div class="info-card"><h4>${r.first_name} ${r.last_name}</h4><p>${dormName(r.dorm_id)} • ${r.checkin}<br>${r.email}</p>${statusBadge(r.status)}</div>`).join('')||'<div class="empty">Brak</div>';
-
-  document.getElementById('dash-tickets').innerHTML=tickets.slice(-4).reverse().map(tk=>`
-    <div class="info-card red"><h4>${dormName(tk.dorm_id)}${tk.room?' — pok.'+tk.room:''}</h4><p>${tk.description.substring(0,80)}</p>${statusBadge(tk.status)}</div>`).join('')||'<div class="empty">Brak</div>';
+  const dashTickets = document.getElementById('dash-tickets');
+  if(dashTickets){
+    dashTickets.innerHTML=tickets.slice(-4).reverse().map(tk=>`
+      <div class="info-card red">
+        <h4>${dormName(tk.dorm_id)}${tk.room?' — pok.'+tk.room:''}</h4>
+        <p>${tk.description.substring(0,80)}</p>
+        ${statusBadge(tk.status)}
+      </div>`).join('')||'<div class="empty">Brak</div>';
+  }
 
   renderTodayTasks();
   startTodayClock();
