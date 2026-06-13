@@ -884,11 +884,14 @@ function renderNotifications(){
   const dormSel=document.getElementById('notif-dorm');
   if(!dormSel)return;
 
-  if(!dormSel.dataset.loaded){
-    dormSel.innerHTML='<option value="">— wybierz —</option>';
-    dorms.forEach(d=>dormSel.innerHTML+=`<option value="${d.id}">${d.name}</option>`);
-    dormSel.dataset.loaded='1';
-  }
+  const currentDorm=dormSel.value;
+
+  dormSel.innerHTML='<option value="">— wybierz —</option>';
+  dorms.forEach(d=>{
+    dormSel.innerHTML+=`<option value="${d.id}">${d.name}</option>`;
+  });
+
+  if(currentDorm) dormSel.value=currentDorm;
 
   const selected=getNotificationRecipients();
 
@@ -898,17 +901,15 @@ function renderNotifications(){
     </div>
     ${selected.slice(0,10).map(r=>`
       <div style="font-size:12px;color:#777;margin-top:4px">
-        ${r.full_name} — ${r.email||'brak emaila'}
+        ${r.full_name} — ${getResidentEmails(r).join(', ') || 'brak emaila'}
       </div>
     `).join('')}
   `;
 
   const tpl=document.getElementById('notif-template')?.value;
-
-  document.getElementById('custom-message-box').style.display =
-    tpl==='custom' ? 'block' : 'none';
+  const box=document.getElementById('custom-message-box');
+  if(box) box.style.display = tpl==='custom' ? 'block' : 'none';
 }
-
 
 function getResidentEmails(r){
   return [r.email, r.email2, r.email3]
@@ -962,7 +963,11 @@ if(tpl==='custom'){
     : 'Payment Reminder / Przypomnienie o płatności';
 }
 
-    const amount = prompt(`Kwota zaległości dla ${r.full_name} (PLN):`, '850') || '850';
+    let amount = '';
+
+if(tpl !== 'custom'){
+  amount = prompt(`Kwota zaległości dla ${r.full_name} (PLN):`, '850') || '850';
+}
 
     let body;
 
