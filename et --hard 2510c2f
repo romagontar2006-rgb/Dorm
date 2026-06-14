@@ -1,0 +1,39 @@
+[33me79d49d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m  reload
+[33m2510c2f[m add finances module
+[33mee607a3[m improve dashboard design
+[33m4726b95[m  reload
+[33m4fc71a1[m  reload
+[33m26103ae[m  reload
+[33m7bb4196[m  reload
+[33maa40135[m fix email ai language handling
+[33m5c2753b[m reload
+[33m8e34f91[m improve dashboard tickets statistics
+[33m74a1809[m send custom notification to all recipients
+[33m32841bb[m fix custom notifications
+[33maa6e217[m add custom notifications
+[33m98c1617[m support three resident emails
+[33m2bdac8d[m add notifications system
+[33m746b417[m improve ticket email format
+[33m78ecf27[m add flat selection to tickets
+[33mb25daf4[m improve tickets workflow
+[33md4f3d05[m improve tickets workflow
+[33m3d916a6[m add history details modal
+[33mdf66fb5[m fix dashboard active reservations
+[33mbea2769[m fix room suggestion by checkin date
+[33m521639b[m fix room suggestion by checkin date
+[33m5e008b3[m delete reservations and improve room gender display
+[33m2e8ffee[m restore gender and contract alerts
+[33mefb91dc[m move reservations into residents
+[33m296974c[m connect reservations with residents rooms
+[33m486f007[m fix reservations display in residents
+[33meb6af7c[m show reservations in residents rooms
+[33me772608[m update site
+[33m71f6e8b[m update site
+[33ma3cf553[m fix contract alerts
+[33m09000a9[m Fix Supabase upsert
+[33mba1aec8[m Debug save
+[33m3499a07[m Use Supabase storage
+[33me4be4ae[m Add Supabase
+[33m55a21f5[m Add requirements
+[33m523c773[m Fix Groq API key
+[33m386b9c7[m First clean version
