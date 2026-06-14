@@ -624,6 +624,10 @@ tr:hover td{background:#fafbff}
 <div class="page" id="page-finances">
   <div class="section-title">💰 Finanse akademików</div>
 
+  <button class="btn btn-primary" onclick="openFinanceSimulation()" style="margin-bottom:16px">
+  📈 Symulacja cen
+</button>
+
   <div class="stats" id="finance-stats"></div>
 
   <div class="table-wrap">
@@ -1659,6 +1663,146 @@ function renderFinances(){
       </td>
     </tr>
   `).join('');
+}
+
+
+
+function openFinanceSimulation(){
+  const sel=document.getElementById('sim-dorm');
+  sel.innerHTML='';
+
+  Object.entries(FINANCE_CONFIG).forEach(([id,cfg])=>{
+    sel.innerHTML+=`<option value="${id}">${cfg.name}</option>`;
+  });
+
+  updateFinanceSimulationFields();
+  document.getElementById('sim-result').innerHTML='';
+  document.getElementById('modal-finance-sim').classList.add('open');
+}
+
+function updateFinanceSimulationFields(){
+  const dormId=Number(document.getElementById('sim-dorm').value);
+  const cfg=FINANCE_CONFIG[dormId];
+
+  document.getElementById('sim-cost').value=cfg.buildingCost||0;
+
+  let html='';
+
+  if(cfg.type==='czarna' || cfg.type==='pomorska'){
+    html=`
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cena pokoju 1-osobowego</label>
+          <input type="number" id="sim-price-1" value="1150">
+        </div>
+        <div class="form-group">
+          <label>Cena miejsca w pokoju 2-osobowym</label>
+          <input type="number" id="sim-price-2" value="850">
+        </div>
+      </div>
+    `;
+  }
+
+  if(cfg.type==='sienkiewicza'){
+    html=`
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cena miejsca w pokoju 2-osobowym</label>
+          <input type="number" id="sim-price-2" value="850">
+        </div>
+        <div class="form-group">
+          <label>Cena miejsca w pokoju 3-osobowym</label>
+          <input type="number" id="sim-price-3" value="700">
+        </div>
+      </div>
+    `;
+  }
+
+  if(cfg.type==='zduny'){
+    html=`
+      <div class="form-group">
+        <label>Cena za osobę</label>
+        <input type="number" id="sim-price-default" value="${cfg.defaultPrice||950}">
+      </div>
+    `;
+  }
+
+  document.getElementById('sim-price-fields').innerHTML=html;
+}
+
+function simulationPriceForPlace(dormId, roomInfo){
+  const cfg=FINANCE_CONFIG[dormId];
+  const cap=roomInfo.capacity||0;
+
+  if(cfg.type==='czarna' || cfg.type==='pomorska'){
+    if(cap===1)return Number(document.getElementById('sim-price-1').value||0);
+    return Number(document.getElementById('sim-price-2').value||0);
+  }
+
+  if(cfg.type==='sienkiewicza'){
+    if(cap===2)return Number(document.getElementById('sim-price-2').value||0);
+    if(cap===3)return Number(document.getElementById('sim-price-3').value||0);
+    return 0;
+  }
+
+  if(cfg.type==='zduny'){
+    return Number(document.getElementById('sim-price-default').value||0);
+  }
+
+  return 0;
+}
+
+function calculateFinanceSimulation(){
+  const dormId=Number(document.getElementById('sim-dorm').value);
+  const structure=roomsStructure[dormId]||{};
+  const newCost=Number(document.getElementById('sim-cost').value||0);
+
+  const current=calcFinanceForDorm(dormId);
+
+  let newRevenue=0;
+  let activeCount=0;
+
+  Object.entries(structure).forEach(([floor,rooms])=>{
+    Object.entries(rooms).forEach(([roomName,info])=>{
+      const price=simulationPriceForPlace(dormId,info);
+
+      const roomResidents=residents.filter(r=>
+        r.status==='active' &&
+        r.dorm_id==dormId &&
+        String(r.floor)==String(floor) &&
+        r.room===roomName
+      );
+
+      activeCount+=roomResidents.length;
+      newRevenue+=roomResidents.length*price;
+    });
+  });
+
+  const newResult=newRevenue-newCost;
+  const diffMonth=newResult-current.result;
+  const diffYear=diffMonth*12;
+  const minPrice=activeCount?Math.ceil(newCost/activeCount):0;
+
+  document.getElementById('sim-result').innerHTML=`
+    <div class="kpi-row">
+      <div class="kpi-mini">
+        <div class="kpi-mini-label">Aktualny wynik</div>
+        <div class="kpi-mini-num" style="color:${current.result>=0?'var(--green)':'var(--red)'}">${money(current.result)}</div>
+      </div>
+
+      <div class="kpi-mini">
+        <div class="kpi-mini-label">Po zmianie</div>
+        <div class="kpi-mini-num" style="color:${newResult>=0?'var(--green)':'var(--red)'}">${money(newResult)}</div>
+      </div>
+    </div>
+
+    <div class="modern-card" style="margin-top:14px">
+      <div class="modern-card-title">💵 Różnica</div>
+      <p>Miesięcznie: <b style="color:${diffMonth>=0?'var(--green)':'var(--red)'}">${money(diffMonth)}</b></p>
+      <p>Rocznie: <b style="color:${diffYear>=0?'var(--green)':'var(--red)'}">${money(diffYear)}</b></p>
+      <p>Minimalna średnia cena miejsca przy obecnym obłożeniu: <b>${money(minPrice)}</b></p>
+    </div>
+  `;
 }
 
 
@@ -3475,6 +3619,39 @@ if(gender === 'female' && malesInRoom > 0){
 
   </div>
 </div>
+
+
+
+<div class="modal" id="modal-finance-sim">
+  <div class="modal-box" style="width:720px">
+    <h3>📈 Symulacja cen</h3>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Akademik</label>
+        <select id="sim-dorm" onchange="updateFinanceSimulationFields()"></select>
+      </div>
+
+      <div class="form-group">
+        <label>Nowy koszt budynku / miesiąc</label>
+        <input type="number" id="sim-cost">
+      </div>
+    </div>
+
+    <div id="sim-price-fields"></div>
+
+    <button class="btn btn-primary" onclick="calculateFinanceSimulation()">
+      Przelicz
+    </button>
+
+    <div id="sim-result" style="margin-top:18px"></div>
+
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('modal-finance-sim')">Zamknij</button>
+    </div>
+  </div>
+</div>
+
 
 
 </body>
