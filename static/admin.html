@@ -1207,8 +1207,18 @@ function renderDashboard(){
 ).length;
 
   const active=residents.filter(r=>r.status==='active').length;
-  const activeTickets=tickets.filter(t=>t.status==='w_trakcie').length;
-const solvedTickets=tickets.filter(t=>t.status==='done').length;
+  console.log('TICKETS:', tickets.map(t=>t.status));
+  const activeTickets=tickets.filter(t=>
+  t.status==='inprogress' || 
+  t.status==='received' || 
+  t.status==='w_trakcie'
+).length;
+
+const solvedTickets=tickets.filter(t=>
+  t.status==='solved' || 
+  t.status==='done' || 
+  t.status==='resolved'
+).length;
   const todayCount=calendarNotes.filter(n=>n.date===isoDate(warsawNow())&&!n.done).length;
 
   document.getElementById('stats').innerHTML=`
@@ -1225,9 +1235,8 @@ const solvedTickets=tickets.filter(t=>t.status==='done').length;
     <div class="stat-card red">
   <div class="stat-num">${activeTickets}</div>
   <div class="stat-label">Zgłoszenia</div>
-
   <div style="font-size:11px;color:#666;margin-top:4px">
-    ✔ ${solvedTickets} rozwiązane
+    ✓ ${solvedTickets} rozwiązane
   </div>
 </div>
 
