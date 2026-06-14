@@ -342,11 +342,12 @@ tr:hover td{background:#fafbff}
       <div class="form-group">
         <label>Typ odbiorców</label>
         <select id="notif-target-type" onchange="renderNotifications()">
-          <option value="all">Wszyscy mieszkańcy</option>
-          <option value="dorm">Akademik</option>
-          <option value="floor">Mieszkanie / sekcja</option>
-          <option value="room">Pokój</option>
-        </select>
+  <option value="all">Wszyscy mieszkańcy</option>
+  <option value="dorm">Akademik</option>
+  <option value="floor">Mieszkanie / sekcja</option>
+  <option value="room">Pokój</option>
+  <option value="person">Wybrana osoba</option>
+</select>
       </div>
 
       <div class="form-group">
@@ -365,6 +366,11 @@ tr:hover td{background:#fafbff}
         <label>Pokój</label>
         <input type="text" id="notif-room" placeholder="np. 5B" oninput="renderNotifications()">
       </div>
+      <div class="form-group" id="notif-person-wrap" style="display:none">
+  <label>Osoba</label>
+  <input type="text" id="notif-person-search" placeholder="Wpisz imię lub nazwisko..." oninput="renderNotifications()">
+  <div id="notif-person-suggestions" style="margin-top:6px"></div>
+</div>
     </div>
 
     <div id="notif-recipients" style="margin-top:10px"></div>
@@ -818,6 +824,7 @@ tr:hover td{background:#fafbff}
 
 <script>
 let lang='pl', pwd='', dorms=[], reservations=[], residents=[], tickets=[], history=[], roomsStructure={};
+let selectedNotificationPersonId = null;
 let selectedPhotoFile=null, selectedRoom=null, selectedFloor=null, selectedDormId=null;
 const MATEUSZ_EMAIL = 'mateusz.intrado@gmail.com'; // email Матеуша
 
@@ -909,7 +916,73 @@ function renderNotifications(){
   const tpl=document.getElementById('notif-template')?.value;
   const box=document.getElementById('custom-message-box');
   if(box) box.style.display = tpl==='custom' ? 'block' : 'none';
+    const type=document.getElementById('notif-target-type')?.value;
+  const personWrap=document.getElementById('notif-person-wrap');
+  const suggestions=document.getElementById('notif-person-suggestions');
+  const search=document.getElementById('notif-person-search');
+
+  if(personWrap){
+    personWrap.style.display = type==='person' ? 'block' : 'none';
+  }
+
+  if(type!=='person'){
+    selectedNotificationPersonId=null;
+    if(suggestions) suggestions.innerHTML='';
+  }
+
+  if(type==='person' && search && suggestions){
+    const q=(search.value||'').toLowerCase().trim();
+
+    if(!q){
+      suggestions.innerHTML='<div style="font-size:12px;color:#888">Wpisz imię lub nazwisko mieszkańca</div>';
+    }else{
+      const matches=residents
+        .filter(r=>r.status==='active')
+        .filter(r=>getResidentEmails(r).length>0)
+        .filter(r=>(r.full_name||'').toLowerCase().includes(q))
+        .slice(0,8);
+
+      suggestions.innerHTML=matches.length?matches.map(r=>`
+        <div onclick="selectNotificationPerson(${r.id})" style="
+          padding:8px 10px;
+          background:#f8fafc;
+          border:1px solid #e5e7eb;
+          border-radius:8px;
+          margin-bottom:5px;
+          cursor:pointer;
+          font-size:12px;
+        ">
+          <b>${r.full_name}</b><br>
+          <span style="color:#64748b">${dormName(r.dorm_id)} • ${r.floor||'—'} / ${r.room||'—'} • ${getResidentEmails(r).join(', ')}</span>
+        </div>
+      `).join(''):'<div style="font-size:12px;color:#dc2626">Brak wyników</div>';
+    }
+  }
 }
+
+function selectNotificationPerson(id){
+  selectedNotificationPersonId=id;
+  const r=residents.find(x=>x.id===id);
+  if(!r)return;
+
+  document.getElementById('notif-person-search').value=r.full_name||'';
+  document.getElementById('notif-person-suggestions').innerHTML=`
+    <div style="
+      padding:9px 10px;
+      background:#dcfce7;
+      border:1px solid #86efac;
+      border-radius:8px;
+      font-size:12px;
+      color:#166534;
+      font-weight:700;
+    ">
+      ✓ Wybrano: ${r.full_name}
+    </div>
+  `;
+
+  renderNotifications();
+}
+
 
 function getResidentEmails(r){
   return [r.email, r.email2, r.email3]
@@ -927,11 +1000,17 @@ function getNotificationRecipients(){
     if(r.status!=='active')return false;
     if(getResidentEmails(r).length===0)return false;
 
+    if(type==='person'){
+      return selectedNotificationPersonId && r.id===selectedNotificationPersonId;
+    }
+
     if(type==='dorm' && dormId && r.dorm_id!=dormId)return false;
+
     if(type==='floor'){
       if(dormId && r.dorm_id!=dormId)return false;
       if(floor && String(r.floor)!==String(floor))return false;
     }
+
     if(type==='room'){
       if(dormId && r.dorm_id!=dormId)return false;
       if(floor && String(r.floor)!==String(floor))return false;
@@ -2230,7 +2309,7 @@ function loadDraft(d){document.getElementById('email-input').value=d.original;do
 function openTasksModal(){
   const today = isoDate(warsawNow());
   document.getElementById('modal-note-date').value = today;
-  document.getElementById('modal-tasks-date').textContent = '✅ CENTRUM ZADAŃ';
+  document.getElementById('modal-tasks-date').textContent = '';
   renderModalTasks();
   document.getElementById('modal-tasks').classList.add('open');
 }
