@@ -253,7 +253,7 @@ tr:hover td{background:#fafbff}
 <!-- МОДАЛКА ЗАДАЧ -->
 <div class="modal" id="modal-tasks">
   <div class="modal-box" style="width:500px">
-    <h3>✅ Zadania na dziś — <span id="modal-tasks-date"></span></h3>
+    <h3>✅ CENTRUM ZADAŃ  <span id="modal-tasks-date"></span></h3>
     <div id="modal-tasks-list" style="margin-bottom:16px;max-height:400px;overflow-y:auto"></div>
     <div style="border-top:1px solid var(--border);padding-top:14px">
       <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:8px">DODAJ NOWE ZADANIE</div>
@@ -2230,49 +2230,185 @@ function loadDraft(d){document.getElementById('email-input').value=d.original;do
 function openTasksModal(){
   const today = isoDate(warsawNow());
   document.getElementById('modal-note-date').value = today;
-  document.getElementById('modal-tasks-date').textContent = 'Wszystkie zadania';
+  document.getElementById('modal-tasks-date').textContent = '✅ CENTRUM ZADAŃ';
   renderModalTasks();
   document.getElementById('modal-tasks').classList.add('open');
 }
 
 function renderModalTasks(){
-  const colors = {red:'#dc2626',orange:'#f97316',yellow:'#eab308',green:'#16a34a',blue:'#2563eb',purple:'#7c3aed',black:'#111827'};
+  const colors = {
+    red:'#dc2626',
+    orange:'#f97316',
+    yellow:'#eab308',
+    green:'#16a34a',
+    blue:'#2563eb',
+    purple:'#7c3aed',
+    black:'#111827'
+  };
+
+  const labels = {
+    red:'PILNE',
+    orange:'WAŻNE',
+    yellow:'DO ZROBIENIA',
+    green:'SPOKOJNE',
+    blue:'INFO',
+    purple:'ADMIN',
+    black:'INNE'
+  };
+
+  const icons = {
+    red:'🔴',
+    orange:'🟠',
+    yellow:'🟡',
+    green:'🟢',
+    blue:'🔵',
+    purple:'🟣',
+    black:'⚫'
+  };
+
   const today = isoDate(warsawNow());
 
-  // Групуємо всі задачі по датах
   const grouped = {};
-  [...calendarNotes].sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')).forEach(n=>{
-    if(!grouped[n.date]) grouped[n.date]=[];
-    grouped[n.date].push(n);
-  });
+  [...calendarNotes]
+    .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''))
+    .forEach(n=>{
+      if(!grouped[n.date]) grouped[n.date]=[];
+      grouped[n.date].push(n);
+    });
+
+  const list=document.getElementById('modal-tasks-list');
 
   if(!Object.keys(grouped).length){
-    document.getElementById('modal-tasks-list').innerHTML='<div style="color:#aaa;text-align:center;padding:20px">Brak zadań ✅</div>';
+    list.innerHTML=`
+      <div style="text-align:center;padding:26px;border:1px dashed #cbd5e1;border-radius:14px;color:#64748b;background:#f8fafc">
+        <div style="font-size:30px;margin-bottom:8px">✅</div>
+        <b>Brak zadań</b>
+        <div style="font-size:12px;margin-top:4px">Dodaj pierwsze zadanie poniżej</div>
+      </div>
+    `;
     return;
   }
 
-  document.getElementById('modal-tasks-list').innerHTML = Object.entries(grouped).map(([date, notes])=>{
+  list.innerHTML = Object.entries(grouped).map(([date, notes])=>{
     const isToday = date === today;
     const isPast = date < today;
     const dateObj = new Date(date);
-    const dateLabel = isToday ? `📅 Dzisiaj — ${formatDate(dateObj)}` : isPast ? `⏰ ${formatDate(dateObj)}` : `📆 ${formatDate(dateObj)}`;
     const doneCnt = notes.filter(n=>n.done).length;
 
-    return `<div style="margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:${isPast&&doneCnt<notes.length?'#dc2626':isToday?'#2563eb':'#888'};text-transform:uppercase;margin-bottom:6px;padding:4px 8px;background:${isToday?'#dbeafe':isPast?'#fee2e2':'#f3f4f6'};border-radius:6px;display:flex;justify-content:space-between">
-        <span>${dateLabel}</span>
-        <span>${doneCnt}/${notes.length}</span>
+    const dateLabel = isToday
+      ? `Dzisiaj — ${formatDate(dateObj)}`
+      : isPast
+        ? `Zaległe — ${formatDate(dateObj)}`
+        : formatDate(dateObj);
+
+    return `
+      <div style="margin-bottom:18px">
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          margin-bottom:10px;
+          padding:9px 12px;
+          border-radius:12px;
+          background:${isToday?'#dbeafe':isPast && doneCnt<notes.length?'#fee2e2':'#f1f5f9'};
+          color:${isToday?'#1d4ed8':isPast && doneCnt<notes.length?'#b91c1c':'#334155'};
+          font-weight:800;
+          font-size:12px;
+          text-transform:uppercase;
+          letter-spacing:.3px;
+        ">
+          <span>${isToday?'📌':isPast?'⏰':'📅'} ${dateLabel}</span>
+          <span>${doneCnt}/${notes.length}</span>
+        </div>
+
+        <div style="display:grid;gap:10px">
+          ${notes.map(n=>{
+            const c = colors[n.color] || colors.blue;
+            const label = labels[n.color] || 'INFO';
+            const icon = icons[n.color] || '🔵';
+
+            return `
+              <div style="
+                background:#fff;
+                border:1px solid #e5e7eb;
+                border-left:6px solid ${c};
+                border-radius:14px;
+                padding:12px 13px;
+                box-shadow:0 4px 14px rgba(15,23,42,.06);
+                opacity:${n.done?'.58':'1'};
+              ">
+                <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">
+                      <span style="
+                        font-size:10px;
+                        font-weight:900;
+                        color:${c};
+                        background:${c}18;
+                        border:1px solid ${c}33;
+                        padding:3px 7px;
+                        border-radius:999px;
+                      ">
+                        ${icon} ${label}
+                      </span>
+
+                      ${n.time?`
+                        <span style="font-size:11px;color:#64748b;font-weight:700">
+                          🕒 ${n.time}
+                        </span>
+                      `:''}
+                    </div>
+
+                    <div style="
+                      font-size:14px;
+                      font-weight:700;
+                      color:#0f172a;
+                      line-height:1.35;
+                      ${n.done?'text-decoration:line-through;color:#94a3b8':''}
+                    ">
+                      ${n.text}
+                    </div>
+
+                    <div style="font-size:11px;color:#64748b;margin-top:7px">
+                      📅 ${formatDate(dateObj)}
+                    </div>
+                  </div>
+
+                  <div style="display:flex;gap:6px;flex-shrink:0">
+                    <button onclick="toggleNoteModal(${n.id},${!n.done})" style="
+                      border:none;
+                      background:${n.done?'#e5e7eb':'#dcfce7'};
+                      color:${n.done?'#64748b':'#166534'};
+                      border-radius:9px;
+                      padding:6px 8px;
+                      font-weight:800;
+                      cursor:pointer;
+                    ">
+                      ${n.done?'↩':'✓'}
+                    </button>
+
+                    <button onclick="deleteNoteModal(${n.id})" style="
+                      border:none;
+                      background:#fee2e2;
+                      color:#991b1b;
+                      border-radius:9px;
+                      padding:6px 8px;
+                      font-weight:800;
+                      cursor:pointer;
+                    ">
+                      ✕
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
       </div>
-      ${notes.map(n=>{
-        const c = colors[n.color]||colors.blue;
-        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;background:#fafafa;margin-bottom:5px;border-left:4px solid ${c}">
-          <input type="checkbox" ${n.done?'checked':''} onchange="toggleNoteModal(${n.id},this.checked)" style="width:15px;height:15px;cursor:pointer;flex-shrink:0">
-          ${n.time?`<span style="font-size:11px;font-weight:700;color:${c};min-width:38px">${n.time}</span>`:''}
-          <span style="flex:1;font-size:13px;${n.done?'text-decoration:line-through;color:#aaa':''}">${n.text}</span>
-          <button onclick="deleteNoteModal(${n.id})" style="border:none;background:none;color:#ddd;cursor:pointer;font-size:13px">✕</button>
-        </div>`;
-      }).join('')}
-    </div>`;
+    `;
   }).join('');
 }
 
