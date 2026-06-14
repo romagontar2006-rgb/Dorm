@@ -819,7 +819,7 @@ tr:hover td{background:#fafbff}
 <script>
 let lang='pl', pwd='', dorms=[], reservations=[], residents=[], tickets=[], history=[], roomsStructure={};
 let selectedPhotoFile=null, selectedRoom=null, selectedFloor=null, selectedDormId=null;
-const MATEUSZ_EMAIL = 'mateusz.intrado@gmail.com'; // тут потім вставиш реальний email Матеуша
+const MATEUSZ_EMAIL = 'mateusz.intrado@gmail.com'; // email Матеуша
 
 // ── ПЕРЕКЛАДИ ──
 const TL={
@@ -2130,13 +2130,39 @@ async function saveDorm(id){
 async function analyzeEmail(){
   const text=document.getElementById('email-input').value.trim();
   if(!text){alert('Wklej treść emaila!');return;}
+
   const sender=document.getElementById('email-sender').value;
   document.getElementById('ai-thinking').style.display='block';
   document.getElementById('email-output').value='';
-  const res=await fetch(`/api/email-analyze?password=${pwd}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email_text:text,sender})});
-  const data=await res.json();
-  document.getElementById('ai-thinking').style.display='none';
-  document.getElementById('email-output').value=data.draft||'Błąd generowania';
+
+  try{
+    const res=await fetch(`/api/email-analyze?password=${pwd}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        email_text:text,
+        sender,
+        language_mode:'auto'
+      })
+    });
+
+    const raw=await res.text();
+
+    if(!res.ok){
+      console.error('AI ERROR:', raw);
+      document.getElementById('email-output').value=
+        'Błąd AI / serwera. Sprawdź Render Logs albo konsolę.';
+      return;
+    }
+
+    const data=JSON.parse(raw);
+    document.getElementById('email-output').value=data.draft||'Błąd generowania';
+  }catch(err){
+    console.error(err);
+    document.getElementById('email-output').value='Błąd połączenia z AI.';
+  }finally{
+    document.getElementById('ai-thinking').style.display='none';
+  }
 }
 function clearEmail(){document.getElementById('email-input').value='';document.getElementById('email-output').value='';document.getElementById('email-sender').value='';}
 function copyEmail(){navigator.clipboard.writeText(document.getElementById('email-output').value);alert('Skopiowano!');}
@@ -2145,13 +2171,37 @@ async function applyImprove(){
   const current=document.getElementById('email-output').value;
   const instruction=document.getElementById('improve-input').value.trim();
   if(!current||!instruction)return;
+
   document.getElementById('ai-thinking').style.display='block';
-  const res=await fetch(`/api/email-analyze?password=${pwd}`,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({email_text:`Popraw ten email według instrukcji: "${instruction}"\n\nEmail do poprawy:\n${current}`,sender:''})});
-  const data=await res.json();
-  document.getElementById('ai-thinking').style.display='none';
-  document.getElementById('email-output').value=data.draft||'Błąd';
-  document.getElementById('improve-section').style.display='none';
+
+  try{
+    const res=await fetch(`/api/email-analyze?password=${pwd}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        email_text:`Popraw ten email według instrukcji: "${instruction}"\n\nEmail do poprawy:\n${current}`,
+        sender:'',
+        language_mode:'auto'
+      })
+    });
+
+    const raw=await res.text();
+
+    if(!res.ok){
+      console.error('AI ERROR:', raw);
+      document.getElementById('email-output').value='Błąd AI / serwera.';
+      return;
+    }
+
+    const data=JSON.parse(raw);
+    document.getElementById('email-output').value=data.draft||'Błąd';
+    document.getElementById('improve-section').style.display='none';
+  }catch(err){
+    console.error(err);
+    document.getElementById('email-output').value='Błąd połączenia z AI.';
+  }finally{
+    document.getElementById('ai-thinking').style.display='none';
+  }
 }
 async function loadDrafts(){
   const s=document.getElementById('drafts-section');

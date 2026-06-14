@@ -199,14 +199,56 @@ async def chat(msg: ChatMsg):
 @app.post("/api/email-analyze")
 async def email_analyze(data: EmailAnalyze, password: str = ""):
     check_admin(password)
-    prompt = f"Email od studenta{' ('+data.sender+')' if data.sender else ''}:\n\n{data.email_text}\n\nNapisz profesjonalną odpowiedź na ten email."
-    r = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "system", "content": EMAIL_SYSTEM}, {"role": "user", "content": prompt}]
-    )
-    reply = r.choices[0].message.content
-    db.save_email_draft({"sender": data.sender, "original": data.email_text, "draft": reply})
-    return {"draft": reply}
+
+    prompt = f"""
+Otrzymujesz email od mieszkańca akademika.
+
+Nadawca: {data.sender if data.sender else "brak"}
+Treść emaila:
+{data.email_text}
+
+Zadanie:
+1. Wykryj język wiadomości.
+2. Odpowiedz w tym samym języku:
+   - jeśli email jest po polsku — odpowiedz po polsku,
+   - jeśli email jest po angielsku — odpowiedz po angielsku,
+   - jeśli email jest po ukraińsku — odpowiedz po ukraińsku,
+   - jeśli email jest po rosyjsku — odpowiedz po rosyjsku.
+3. Odpowiedź ma być profesjonalna, uprzejma i w stylu administracji akademika.
+4. Nie dodawaj zbędnych wyjaśnień.
+5. Podpisz wiadomość jako administracja akademika.
+"""
+
+    try:
+        r = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Jesteś profesjonalnym asystentem administracji akademika WSG. Piszesz krótkie, uprzejme i formalne odpowiedzi."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+
+        reply = r.choices[0].message.content
+
+        db.save_email_draft({
+            "sender": data.sender,
+            "original": data.email_text,
+            "draft": reply
+        })
+
+        return {"draft": reply}
+
+    except Exception as e:
+        print("EMAIL AI ERROR:", str(e))
+        return {
+            "draft": f"Błąd generowania odpowiedzi AI: {str(e)}"
+        }
 
 # ── ФОТО UPLOAD ──
 @app.post("/api/upload-photo")
