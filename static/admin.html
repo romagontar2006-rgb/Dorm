@@ -400,6 +400,7 @@ tr:hover td{background:#fafbff}
       <button class="sidebar-btn" onclick="showPage('residents',this)">👥 <span data-t="menu_residents">Mieszkańcy</span></button>
       <button class="sidebar-btn" onclick="showPage('tickets',this)">⚠️ <span data-t="menu_tickets">Zgłoszenia</span></button>
       <button class="sidebar-btn" onclick="showPage('dorms',this)">🏢 <span data-t="menu_dorms">Akademiki</span></button>
+      <button class="sidebar-btn" onclick="showPage('finances',this)">💰 Finanse</button>
       <div class="sidebar-section">AI & EMAIL</div>
       <button class="sidebar-btn" onclick="showPage('email',this)">✉️ <span data-t="menu_email">Asystent Email</span></button>
       <div class="sidebar-section">HISTORIA</div>
@@ -618,6 +619,32 @@ tr:hover td{background:#fafbff}
         <div class="section-title"><span data-t="dorms_title">Akademiki</span></div>
         <div id="dorms-admin"></div>
       </div>
+
+<!-- FINANSE -->
+<div class="page" id="page-finances">
+  <div class="section-title">💰 Finanse akademików</div>
+
+  <div class="stats" id="finance-stats"></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Akademik</th>
+          <th>Mieszkańcy</th>
+          <th>Miejsca</th>
+          <th>Obłożenie</th>
+          <th>Przychód aktualny</th>
+          <th>Przychód max</th>
+          <th>Koszt budynku</th>
+          <th>Wynik</th>
+        </tr>
+      </thead>
+      <tbody id="finance-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
 
       <!-- EMAIL AI -->
       <div class="page" id="page-email">
@@ -957,6 +984,7 @@ function showPage(id,btn){
   residents:renderResidents,
   tickets:renderTickets,
   dorms:renderDormsAdmin,
+  finances:renderFinances,
   history:renderHistory,
   notifications:renderNotifications
 };
@@ -1472,6 +1500,166 @@ const solvedTickets=tickets.filter(t=>
   renderTodayTasks();
   startTodayClock();
 }
+
+
+const FINANCE_CONFIG = {
+  1: {
+    name: 'Czarna Droga 41',
+    buildingCost: 61000,
+    type: 'czarna'
+  },
+  2: {
+    name: 'Sienkiewicza 17',
+    buildingCost: 15000,
+    type: 'sienkiewicza'
+  },
+  3: {
+    name: 'Pomorska 80-86',
+    buildingCost: 3200,
+    type: 'pomorska',
+    defaultPrice: 0 // TODO: wpisz cenę za osobę
+  },
+  4: {
+    name: 'Zduny 13',
+    buildingCost: 17000,
+    type: 'zduny',
+    defaultPrice: 950
+  }
+};
+
+function priceForPlace(dormId, roomInfo){
+  const cfg = FINANCE_CONFIG[dormId];
+  if(!cfg) return 0;
+
+  const cap = roomInfo.capacity || 0;
+
+  if(cfg.type === 'czarna'){
+    if(cap === 1) return 1150;
+    return 850;
+  }
+
+  if(cfg.type === 'sienkiewicza'){
+    if(cap === 2) return 850;
+    if(cap === 3) return 700;
+    return 0;
+  }
+
+  if(cfg.type === 'zduny'){
+    return 950;
+  }
+
+  if(cfg.type === 'pomorska'){
+    return cfg.defaultPrice || 0;
+  }
+
+  return 0;
+}
+
+function calcFinanceForDorm(dormId){
+  const structure = roomsStructure[dormId] || {};
+  const cfg = FINANCE_CONFIG[dormId] || {buildingCost:0};
+
+  let totalPlaces = 0;
+  let maxRevenue = 0;
+  let currentRevenue = 0;
+
+  Object.entries(structure).forEach(([floor, rooms])=>{
+    Object.entries(rooms).forEach(([roomName, info])=>{
+      const price = priceForPlace(Number(dormId), info);
+      const capacity = info.capacity || 0;
+
+      totalPlaces += capacity;
+      maxRevenue += capacity * price;
+
+      const roomResidents = residents.filter(r =>
+        r.status === 'active' &&
+        r.dorm_id == dormId &&
+        String(r.floor) == String(floor) &&
+        r.room === roomName
+      );
+
+      currentRevenue += roomResidents.length * price;
+    });
+  });
+
+  const activeResidents = residents.filter(r =>
+    r.status === 'active' && r.dorm_id == dormId
+  ).length;
+
+  const occupancy = totalPlaces ? Math.round((activeResidents / totalPlaces) * 100) : 0;
+  const result = currentRevenue - (cfg.buildingCost || 0);
+
+  return {
+    dormId,
+    name: dormName(dormId),
+    activeResidents,
+    totalPlaces,
+    occupancy,
+    currentRevenue,
+    maxRevenue,
+    buildingCost: cfg.buildingCost || 0,
+    result
+  };
+}
+
+function money(v){
+  return `${Number(v||0).toLocaleString('pl-PL')} PLN`;
+}
+
+function renderFinances(){
+  const dormIds = Object.keys(roomsStructure).map(Number);
+  const rows = dormIds.map(id => calcFinanceForDorm(id));
+
+  const totalCurrent = rows.reduce((s,r)=>s+r.currentRevenue,0);
+  const totalMax = rows.reduce((s,r)=>s+r.maxRevenue,0);
+  const totalCost = rows.reduce((s,r)=>s+r.buildingCost,0);
+  const totalResult = totalCurrent - totalCost;
+
+  document.getElementById('finance-stats').innerHTML = `
+    <div class="stat-card green">
+      <div class="stat-num">${money(totalCurrent)}</div>
+      <div class="stat-label">Aktualny przychód / miesiąc</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-num">${money(totalMax)}</div>
+      <div class="stat-label">Maksymalny przychód</div>
+    </div>
+
+    <div class="stat-card orange">
+      <div class="stat-num">${money(totalCost)}</div>
+      <div class="stat-label">Koszty budynków</div>
+    </div>
+
+    <div class="stat-card ${totalResult >= 0 ? 'green' : 'red'}">
+      <div class="stat-num">${money(totalResult)}</div>
+      <div class="stat-label">Szacowany wynik</div>
+    </div>
+  `;
+
+  document.getElementById('finance-tbody').innerHTML = rows.map(r=>`
+    <tr>
+      <td><b>${r.name}</b></td>
+      <td>${r.activeResidents}</td>
+      <td>${r.totalPlaces}</td>
+      <td>
+        <b>${r.occupancy}%</b>
+        <div class="progress-bar" style="height:8px;margin-top:5px">
+          <div class="progress-fill" style="width:${r.occupancy}%"></div>
+        </div>
+      </td>
+      <td><b style="color:var(--green)">${money(r.currentRevenue)}</b></td>
+      <td>${money(r.maxRevenue)}</td>
+      <td><b style="color:var(--orange)">${money(r.buildingCost)}</b></td>
+      <td>
+        <b style="color:${r.result>=0?'var(--green)':'var(--red)'}">
+          ${money(r.result)}
+        </b>
+      </td>
+    </tr>
+  `).join('');
+}
+
 
 function startTodayClock(){
   const el=document.getElementById('today-clock');
