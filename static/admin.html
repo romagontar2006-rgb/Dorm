@@ -1517,7 +1517,7 @@ const FINANCE_CONFIG = {
     name: 'Pomorska 80-86',
     buildingCost: 3200,
     type: 'pomorska',
-    
+    defaultPrice: 850 
   },
   4: {
     name: 'Zduny 13',
@@ -1549,8 +1549,7 @@ function priceForPlace(dormId, roomInfo){
   }
 
   if(cfg.type === 'pomorska'){
-    if(cap === 1) return 1150;
-    return 850;
+    return cfg.defaultPrice || 0;
   }
 
   return 0;
@@ -1579,29 +1578,9 @@ function calcFinanceForDorm(dormId){
         r.room === roomName
       );
 
-       currentRevenue += roomResidents.length * price;
+      currentRevenue += roomResidents.length * price;
     });
   });
-
-  const activeResidents = residents.filter(r =>
-    r.status === 'active' && Number(r.dorm_id) === dormId
-  ).length;
-
-  const occupancy = totalPlaces ? Math.round((activeResidents / totalPlaces) * 100) : 0;
-  const result = currentRevenue - (cfg.buildingCost || 0);
-
-  return {
-    dormId,
-    name: dormName(dormId),
-    activeResidents,
-    totalPlaces,
-    occupancy,
-    currentRevenue,
-    maxRevenue,
-    buildingCost: cfg.buildingCost || 0,
-    result
-  };
-}
 
   const activeResidents = residents.filter(r =>
     r.status === 'active' && r.dorm_id == dormId
@@ -1621,14 +1600,14 @@ function calcFinanceForDorm(dormId){
     buildingCost: cfg.buildingCost || 0,
     result
   };
-
+}
 
 function money(v){
   return `${Number(v||0).toLocaleString('pl-PL')} PLN`;
 }
 
 function renderFinances(){
-  const dormIds = Object.keys(FINANCE_CONFIG).map(Number);
+  const dormIds = Object.keys(roomsStructure).map(Number);
   const rows = dormIds.map(id => calcFinanceForDorm(id));
 
   const totalCurrent = rows.reduce((s,r)=>s+r.currentRevenue,0);
