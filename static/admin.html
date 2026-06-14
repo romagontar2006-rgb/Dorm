@@ -1759,12 +1759,18 @@ function calculateFinanceSimulation(){
 
   const current=calcFinanceForDorm(dormId);
 
-  let newRevenue=0;
+  let newRevenueCurrent=0;
+  let newRevenueFull=0;
   let activeCount=0;
+  let totalPlaces=0;
 
   Object.entries(structure).forEach(([floor,rooms])=>{
     Object.entries(rooms).forEach(([roomName,info])=>{
       const price=simulationPriceForPlace(dormId,info);
+      const capacity=info.capacity||0;
+
+      totalPlaces+=capacity;
+      newRevenueFull+=capacity*price;
 
       const roomResidents=residents.filter(r=>
         r.status==='active' &&
@@ -1774,33 +1780,88 @@ function calculateFinanceSimulation(){
       );
 
       activeCount+=roomResidents.length;
-      newRevenue+=roomResidents.length*price;
+      newRevenueCurrent+=roomResidents.length*price;
     });
   });
 
-  const newResult=newRevenue-newCost;
-  const diffMonth=newResult-current.result;
-  const diffYear=diffMonth*12;
-  const minPrice=activeCount?Math.ceil(newCost/activeCount):0;
+  const currentResult=current.currentRevenue-current.buildingCost;
+
+  const newResultCurrent=newRevenueCurrent-newCost;
+  const newResultFull=newRevenueFull-newCost;
+
+  const diffCurrentMonth=newResultCurrent-currentResult;
+  const diffCurrentYear=diffCurrentMonth*12;
+
+  const fullExtraMonth=newResultFull-newResultCurrent;
+  const fullExtraYear=fullExtraMonth*12;
+
+  const occupancy=totalPlaces?Math.round((activeCount/totalPlaces)*100):0;
+  const minPriceCurrent=activeCount?Math.ceil(newCost/activeCount):0;
+  const minPriceFull=totalPlaces?Math.ceil(newCost/totalPlaces):0;
 
   document.getElementById('sim-result').innerHTML=`
-    <div class="kpi-row">
-      <div class="kpi-mini">
-        <div class="kpi-mini-label">Aktualny wynik</div>
-        <div class="kpi-mini-num" style="color:${current.result>=0?'var(--green)':'var(--red)'}">${money(current.result)}</div>
+    <div class="modern-card">
+      <div class="modern-card-title">📊 Aktualny stan — obecne obłożenie</div>
+
+      <div style="font-size:12px;color:#64748b;margin-bottom:10px">
+        Obecnie mieszka: <b>${activeCount}</b> / ${totalPlaces} miejsc (${occupancy}%)
       </div>
 
-      <div class="kpi-mini">
-        <div class="kpi-mini-label">Po zmianie</div>
-        <div class="kpi-mini-num" style="color:${newResult>=0?'var(--green)':'var(--red)'}">${money(newResult)}</div>
+      <div class="kpi-row">
+        <div class="kpi-mini">
+          <div class="kpi-mini-label">Aktualny wynik</div>
+          <div class="kpi-mini-num" style="color:${currentResult>=0?'var(--green)':'var(--red)'}">${money(currentResult)}</div>
+        </div>
+
+        <div class="kpi-mini">
+          <div class="kpi-mini-label">Po zmianie cen</div>
+          <div class="kpi-mini-num" style="color:${newResultCurrent>=0?'var(--green)':'var(--red)'}">${money(newResultCurrent)}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <p>Różnica miesięcznie:
+          <b style="color:${diffCurrentMonth>=0?'var(--green)':'var(--red)'}">${money(diffCurrentMonth)}</b>
+        </p>
+        <p>Różnica rocznie:
+          <b style="color:${diffCurrentYear>=0?'var(--green)':'var(--red)'}">${money(diffCurrentYear)}</b>
+        </p>
+        <p>Minimalna średnia cena miejsca przy obecnym obłożeniu:
+          <b>${money(minPriceCurrent)}</b>
+        </p>
       </div>
     </div>
 
-    <div class="modern-card" style="margin-top:14px">
-      <div class="modern-card-title">💵 Różnica</div>
-      <p>Miesięcznie: <b style="color:${diffMonth>=0?'var(--green)':'var(--red)'}">${money(diffMonth)}</b></p>
-      <p>Rocznie: <b style="color:${diffYear>=0?'var(--green)':'var(--red)'}">${money(diffYear)}</b></p>
-      <p>Minimalna średnia cena miejsca przy obecnym obłożeniu: <b>${money(minPrice)}</b></p>
+    <div class="modern-card" style="margin-top:16px">
+      <div class="modern-card-title">🏠 Scenariusz — 100% obłożenia</div>
+
+      <div style="font-size:12px;color:#64748b;margin-bottom:10px">
+        Założenie: wszystkie <b>${totalPlaces}</b> miejsca są zajęte.
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-mini">
+          <div class="kpi-mini-label">Przychód przy 100%</div>
+          <div class="kpi-mini-num" style="color:var(--blue)">${money(newRevenueFull)}</div>
+        </div>
+
+        <div class="kpi-mini">
+          <div class="kpi-mini-label">Wynik przy 100%</div>
+          <div class="kpi-mini-num" style="color:${newResultFull>=0?'var(--green)':'var(--red)'}">${money(newResultFull)}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <p>Dodatkowy potencjał względem aktualnego obłożenia:
+          <b style="color:${fullExtraMonth>=0?'var(--green)':'var(--red)'}">${money(fullExtraMonth)} / miesiąc</b>
+        </p>
+        <p>Potencjał roczny:
+          <b style="color:${fullExtraYear>=0?'var(--green)':'var(--red)'}">${money(fullExtraYear)} / rok</b>
+        </p>
+        <p>Minimalna średnia cena miejsca przy 100% obłożeniu:
+          <b>${money(minPriceFull)}</b>
+        </p>
+      </div>
     </div>
   `;
 }
