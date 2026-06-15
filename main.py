@@ -571,6 +571,111 @@ async def accommodation_confirmation(data: AccommodationConfirmation, password: 
     )
 
 
+from calendar import monthrange
+
+
+class ContractTermination(BaseModel):
+    full_name: str
+    gender: str = "any"
+    dorm_name: str
+    room: str = ""
+    notice_date: str = ""
+
+
+def calculate_termination_end(date_str):
+    if not date_str:
+        start = datetime.now()
+    else:
+        start = datetime.strptime(date_str, "%Y-%m-%d")
+
+    month = start.month + 3
+    year = start.year
+
+    while month > 12:
+        month -= 12
+        year += 1
+
+    last_day = monthrange(year, month)[1]
+    return datetime(year, month, last_day)
+
+
+@app.post("/api/contract-termination")
+async def contract_termination(data: ContractTermination, password: str = ""):
+    check_admin(password)
+
+    doc = Document()
+
+    style = doc.styles["Normal"]
+    style.font.name = "Times New Roman"
+    style.font.size = Pt(12)
+
+    today = datetime.now()
+    notice_date = datetime.strptime(data.notice_date, "%Y-%m-%d") if data.notice_date else today
+    termination_end = calculate_termination_end(data.notice_date)
+
+    doc.add_paragraph(f"Bydgoszcz, {notice_date.strftime('%d.%m.%Y')}")
+    doc.add_paragraph("")
+
+    title = doc.add_paragraph()
+    run = title.add_run("ROZWIĄZANIE UMOWY NAJMU")
+    run.bold = True
+    run.font.size = Pt(16)
+    title.alignment = 1
+
+    doc.add_paragraph("")
+
+    p = doc.add_paragraph()
+    p.add_run("Imię i nazwisko:").bold = True
+    doc.add_paragraph(data.full_name)
+
+    doc.add_paragraph("")
+
+    p = doc.add_paragraph()
+    p.add_run("Adres zakwaterowania:").bold = True
+
+    address = dorm_address(data.dorm_name).format(data.room or "—")
+    for line in address.split("\n"):
+        doc.add_paragraph(line)
+
+    doc.add_paragraph("")
+
+    p = doc.add_paragraph()
+    p.add_run("Data złożenia wypowiedzenia:").bold = True
+    doc.add_paragraph(notice_date.strftime("%d.%m.%Y"))
+
+    doc.add_paragraph("")
+
+    p = doc.add_paragraph()
+    p.add_run("Planowana data zakończenia umowy:").bold = True
+    doc.add_paragraph(termination_end.strftime("%d.%m.%Y"))
+
+    doc.add_paragraph("")
+    doc.add_paragraph(
+        "Potwierdzam złożenie wypowiedzenia umowy najmu miejsca w Domu Studenckim WSG."
+    )
+
+    doc.add_paragraph("")
+    doc.add_paragraph("")
+    doc.add_paragraph("Podpis mieszkańca")
+    doc.add_paragraph("........................................")
+
+    doc.add_paragraph("")
+    footer = doc.add_paragraph()
+    footer_run = footer.add_run("Dokument wygenerowano automatycznie przez system WSG Akademiki.")
+    footer_run.font.size = Pt(8)
+
+    filename = f"Rozwiazanie_umowy_{data.full_name.replace(' ', '_')}.docx"
+    path = os.path.join(tempfile.gettempdir(), filename)
+
+    doc.save(path)
+
+    return FileResponse(
+        path,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename=filename
+    )
+
+
 # ── ФОТО UPLOAD ──
 @app.post("/api/upload-photo")
 async def upload_photo(file: UploadFile = File(...)):
