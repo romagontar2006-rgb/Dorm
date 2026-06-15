@@ -2485,53 +2485,6 @@ if(fromRes){
 }
 
 
-async function downloadAccommodationConfirmation(){
-  const id=document.getElementById('m-id').value;
-
-  if(!id){
-    alert('Najpierw zapisz mieszkańca.');
-    return;
-  }
-
-  const r=residents.find(x=>String(x.id)===String(id));
-  if(!r){
-    alert('Nie znaleziono mieszkańca.');
-    return;
-  }
-
-  const payload={
-    full_name:r.full_name||document.getElementById('m-name').value,
-    gender:r.gender||document.getElementById('m-gender').value,
-    dorm_name:dormName(r.dorm_id||document.getElementById('m-dorm').value),
-    room:r.room||document.getElementById('m-room').value,
-    checkin:r.checkin||document.getElementById('m-checkin').value,
-    checkout:r.checkout||document.getElementById('m-checkout').value,
-  };
-
-  const res=await fetch(`/api/accommodation-confirmation?password=${pwd}`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(payload)
-  });
-
-  if(!res.ok){
-    alert('Błąd generowania dokumentu');
-    return;
-  }
-
-  const blob=await res.blob();
-  const url=window.URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download=`Potwierdzenie_zakwaterowania_${payload.full_name.replaceAll(' ','_')}.docx`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  window.URL.revokeObjectURL(url);
-}
-
-
-
 async function evictResident(id){
   if(!confirm('Wymeldować mieszkańca?'))return;
   const today=new Date().toISOString().split('T')[0];
