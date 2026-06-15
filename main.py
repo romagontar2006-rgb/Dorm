@@ -1,13 +1,16 @@
 from datetime import datetime
+import os, shutil, uuid, tempfile
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from groq import Groq
 from typing import Optional
+from docx import Document
+from docx.shared import Pt
+
 import database as db
-import os, shutil, uuid
 
 app = FastAPI()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -469,6 +472,104 @@ Zadanie:
         return {
             "draft": f"Błąd generowania odpowiedzi AI: {str(e)}"
         }
+    
+
+class AccommodationConfirmation(BaseModel):
+    full_name: str
+    gender: str = "any"
+    dorm_name: str
+    room: str = ""
+    checkin: str = ""
+    checkout: str = ""
+
+
+def format_pl_date(date_str):
+    if not date_str:
+        return "—"
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").strftime("%d.%m.%Y")
+    except:
+        return date_str
+
+
+def dorm_address(dorm_name):
+    name = (dorm_name or "").lower()
+
+    if "czarna" in name:
+        return "ul. Czarna Droga 41\nPokój {}\n85-236 Bydgoszcz"
+    if "sienkiewicza" in name:
+        return "ul. Sienkiewicza 17\nPokój {}\n85-037 Bydgoszcz"
+    if "zduny" in name:
+        return "ul. Zduny 13\nPokój {}\n85-055 Bydgoszcz"
+    if "pomorska" in name:
+        return "ul. Pomorska 80-86\nPokój {}\n85-051 Bydgoszcz"
+
+    return f"{dorm_name}\nPokój {{}}\nBydgoszcz"
+
+
+@app.post("/api/accommodation-confirmation")
+async def accommodation_confirmation(data: AccommodationConfirmation, password: str = ""):
+    check_admin(password)
+
+    doc = Document()
+
+    style = doc.styles["Normal"]
+    style.font.name = "Times New Roman"
+    style.font.size = Pt(12)
+
+    today = datetime.now().strftime("%d.%m.%Y")
+
+    doc.add_paragraph(f"Bydgoszcz, {today}")
+    doc.add_paragraph("")
+
+    title = doc.add_paragraph()
+    run = title.add_run("Potwierdzenie zakwaterowania")
+    run.bold = True
+    run.font.size = Pt(16)
+    title.alignment = 1
+
+    doc.add_paragraph("")
+    doc.add_paragraph("Niniejszym zaświadczamy, że:")
+
+    person = "Pan" if data.gender == "male" else "Pani" if data.gender == "female" else "Pan/Pani"
+    p = doc.add_paragraph()
+    r = p.add_run(f"{person} {data.full_name}")
+    r.bold = True
+
+    doc.add_paragraph("jest studentem oraz aktualnie zamieszkuje w akademiku WSG w Bydgoszczy.")
+
+    doc.add_paragraph(
+        f"Okres zakwaterowania: od {format_pl_date(data.checkin)} do {format_pl_date(data.checkout)}."
+    )
+
+    doc.add_paragraph("Adres zakwaterowania:")
+    address = dorm_address(data.dorm_name).format(data.room or "—")
+    for line in address.split("\n"):
+        doc.add_paragraph(line)
+
+    doc.add_paragraph("")
+    doc.add_paragraph(
+        "Dokument wydano na prośbę zainteresowanej osoby w celu przedłożenia "
+        "w odpowiednich instytucjach jako potwierdzenie miejsca zamieszkania oraz "
+        "zakwaterowania na terenie Rzeczypospolitej Polskiej."
+    )
+
+    doc.add_paragraph("")
+    doc.add_paragraph("Z poważaniem,")
+    doc.add_paragraph("Tomasz Frejgandt")
+    doc.add_paragraph("Dziekan ds. Inwestycji WSG")
+
+    filename = f"Potwierdzenie_zakwaterowania_{data.full_name.replace(' ', '_')}.docx"
+    path = os.path.join(tempfile.gettempdir(), filename)
+
+    doc.save(path)
+
+    return FileResponse(
+        path,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename=filename
+    )
+
 
 # ── ФОТО UPLOAD ──
 @app.post("/api/upload-photo")
@@ -622,3 +723,6 @@ async def delete_note(note_id: int, password: str = ""):
     return {"ok": True}
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+
+
