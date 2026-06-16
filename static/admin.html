@@ -398,11 +398,37 @@ tr:hover td{background:#fafbff}
       <div class="sidebar-section">GŁÓWNE</div>
       <button class="sidebar-btn active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
       <div class="sidebar-section">ZARZĄDZANIE</div>
-      <button class="sidebar-btn" onclick="showPage('residents',this)">👥 <span data-t="menu_residents">Mieszkańcy</span></button>
-      <button class="sidebar-btn" onclick="showPage('tickets',this)">⚠️ <span data-t="menu_tickets">Zgłoszenia</span></button>
-      <button class="sidebar-btn" onclick="showPage('dorms',this)">🏢 <span data-t="menu_dorms">Akademiki</span></button>
-      <button class="sidebar-btn" onclick="showPage('finances',this)">💰 Finanse</button>
-      <div class="sidebar-section">AI & EMAIL</div>
+
+<button class="sidebar-btn"
+        data-admin-role="true"
+        onclick="showPage('residents',this)">
+  👥 <span data-t="menu_residents">Mieszkańcy</span>
+</button>
+
+<button class="sidebar-btn"
+        onclick="showPage('tickets',this)">
+  ⚠️ <span data-t="menu_tickets">Zgłoszenia</span>
+</button>
+
+<button class="sidebar-btn"
+        data-admin-role="true"
+        onclick="showPage('dorms',this)">
+  🏢 <span data-t="menu_dorms">Akademiki</span>
+</button>
+
+<button class="sidebar-btn"
+        data-admin-role="true"
+        onclick="showPage('finances',this)">
+  💰 Finanse
+</button>
+
+<button class="sidebar-btn"
+        data-super-admin-only="true"
+        onclick="showPage('users',this)">
+  👤 Użytkownicy
+</button>
+
+<div class="sidebar-section">AI & EMAIL</div>
       <button class="sidebar-btn" onclick="showPage('email',this)">✉️ <span data-t="menu_email">Asystent Email</span></button>
       <div class="sidebar-section">HISTORIA</div>
       <button class="sidebar-btn" onclick="showPage('history',this)">📋 <span data-t="menu_history">Historia</span></button>
@@ -1006,19 +1032,20 @@ function hasRole(...roles){
 function applyRoleUI(){
   if(!currentUser)return;
 
-  // Pracownik — ховаємо фінанси та управління
-  if(currentUser.role==='pracownik'){
-    document.querySelectorAll('[data-admin-only="true"]').forEach(el=>el.style.display='none');
-    document.querySelectorAll('[data-super-admin-only="true"]').forEach(el=>el.style.display='none');
-  }
+  document.querySelectorAll('[data-super-admin-only="true"]').forEach(el=>{
+    el.style.display = hasRole('super_admin') ? '' : 'none';
+  });
 
-  // Admin — ховаємо тільки Super Admin речі
-  if(currentUser.role==='admin'){
-    document.querySelectorAll('[data-super-admin-only="true"]').forEach(el=>el.style.display='none');
-  }
+  document.querySelectorAll('[data-admin-role="true"]').forEach(el=>{
+    el.style.display = hasRole('super_admin','admin') ? '' : 'none';
+  });
 
-  // Super Admin бачить все
+  document.querySelectorAll('[data-worker-hidden="true"]').forEach(el=>{
+    el.style.display = currentUser.role === 'pracownik' ? 'none' : '';
+  });
 }
+
+
 async function loadAll(){
   const [r1,r2,r3,r4,r5,r6]=await Promise.all([
     fetch('/api/dorms').then(r=>r.json()),
