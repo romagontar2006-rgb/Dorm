@@ -357,6 +357,11 @@ SYSTEM_PROMPTS = {
 }
 
 
+class LoginData(BaseModel):
+    email: str
+    password: str
+
+
 @app.post("/api/login")
 async def login(data: LoginData):
 
@@ -431,10 +436,6 @@ class EmailAnalyze(BaseModel):
     email_text: str
     sender: Optional[str] = ""
 
-
-class LoginData(BaseModel):
-    email: str
-    password: str
 
 
 # ── CHAT ──

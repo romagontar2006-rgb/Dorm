@@ -959,31 +959,13 @@ function setLang(l,btn){lang=l;document.querySelectorAll('.lang-btn').forEach(b=
 let currentUser=null;
 
 async function login(){
-  const email=document.getElementById('login-email').value.trim();
-  const password=document.getElementById('login-password').value;
-
-  const res=await fetch('/api/login',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({email,password})
-  });
-
-  if(!res.ok){
-    document.getElementById('login-err').style.display='block';
-    return;
-  }
-
-  currentUser=await res.json();
-
-  // тимчасово, щоб старі API ще працювали
-  pwd='1111';
-
+  pwd=document.getElementById('login-password')?.value || document.getElementById('pwd')?.value;
+  const res=await fetch(`/api/reservations?password=${pwd}`);
+  if(res.status===403){document.getElementById('login-err').style.display='block';return;}
   document.getElementById('login-wrap').style.display='none';
   const app=document.getElementById('app');
   app.style.display='flex';
   app.style.flexDirection='column';
-
-  applyRoleUI();
   await loadAll();
   renderDashboard();
 }
