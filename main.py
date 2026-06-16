@@ -356,6 +356,29 @@ SYSTEM_PROMPTS = {
     "pl": f"Odpowiadaj tylko po polsku. {DORM_INFO}",
 }
 
+
+@app.post("/api/login")
+async def login(data: LoginData):
+
+    user = db.get_user_by_email(data.email)
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Nieprawidłowy login")
+
+    if not user.get("active"):
+        raise HTTPException(status_code=403, detail="Konto zablokowane")
+
+    if user.get("password_hash") != data.password:
+        raise HTTPException(status_code=401, detail="Nieprawidłowe hasło")
+
+    return {
+        "id": user["id"],
+        "name": user["name"],
+        "email": user["email"],
+        "role": user["role"]
+    }
+
+
 def check_admin(password: str):
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=403, detail="Błąd autoryzacji")
@@ -407,6 +430,12 @@ class ResidentIn(BaseModel):
 class EmailAnalyze(BaseModel):
     email_text: str
     sender: Optional[str] = ""
+
+
+class LoginData(BaseModel):
+    email: str
+    password: str
+
 
 # ── CHAT ──
 @app.post("/api/chat")

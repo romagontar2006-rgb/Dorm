@@ -288,3 +288,17 @@ def save_email_draft(data):
     items.append(data)
     _save("email_drafts", items)
     return data["id"]
+
+
+def get_user_by_email(email):
+    result = (
+        supabase.table("users")
+        .select("*")
+        .eq("email", email)
+        .execute()
+    )
+
+    if result.data:
+        return result.data[0]
+
+    return None

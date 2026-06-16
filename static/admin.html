@@ -374,7 +374,8 @@ tr:hover td{background:#fafbff}
       <h2>Panel Admina WSG</h2>
       <p>System zarządzania akademikami</p>
     </div>
-    <input type="password" id="pwd" placeholder="Hasło administratora" onkeypress="if(event.key==='Enter')login()">
+    <input type="email" id="login-email" placeholder="Email" onkeypress="if(event.key==='Enter')login()">
+<input type="password" id="login-password" placeholder="Hasło" onkeypress="if(event.key==='Enter')login()">
     <div class="login-err" id="login-err">❌ Nieprawidłowe hasło!</div>
     <button onclick="login()">Zaloguj się →</button>
   </div>
@@ -955,16 +956,67 @@ function t(k){return TL[lang][k]||k;}
 function setLang(l,btn){lang=l;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('[data-t]').forEach(el=>{const k=el.getAttribute('data-t');if(TL[lang][k])el.innerHTML=TL[lang][k];});}
 
 // ── LOGIN ──
-async function login(){
-  pwd=document.getElementById('pwd').value;
-  const res=await fetch(`/api/reservations?password=${pwd}`);
-  if(res.status===403){document.getElementById('login-err').style.display='block';return;}
-  document.getElementById('login-wrap').style.display='none';
-  const app=document.getElementById('app');app.style.display='flex';app.style.flexDirection='column';
-  await loadAll();renderDashboard();
-}
-function logout(){document.getElementById('login-wrap').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('pwd').value='';pwd='';}
+let currentUser=null;
 
+async function login(){
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
+
+  const res=await fetch('/api/login',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({email,password})
+  });
+
+  if(!res.ok){
+    document.getElementById('login-err').style.display='block';
+    return;
+  }
+
+  currentUser=await res.json();
+
+  // тимчасово, щоб старі API ще працювали
+  pwd='1111';
+
+  document.getElementById('login-wrap').style.display='none';
+  const app=document.getElementById('app');
+  app.style.display='flex';
+  app.style.flexDirection='column';
+
+  applyRoleUI();
+  await loadAll();
+  renderDashboard();
+}
+
+function logout(){
+  currentUser=null;
+  document.getElementById('login-wrap').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-email').value='';
+  document.getElementById('login-password').value='';
+  pwd='';
+}
+
+function hasRole(...roles){
+  return currentUser && roles.includes(currentUser.role);
+}
+
+function applyRoleUI(){
+  if(!currentUser)return;
+
+  // Pracownik — ховаємо фінанси та управління
+  if(currentUser.role==='pracownik'){
+    document.querySelectorAll('[data-admin-only="true"]').forEach(el=>el.style.display='none');
+    document.querySelectorAll('[data-super-admin-only="true"]').forEach(el=>el.style.display='none');
+  }
+
+  // Admin — ховаємо тільки Super Admin речі
+  if(currentUser.role==='admin'){
+    document.querySelectorAll('[data-super-admin-only="true"]').forEach(el=>el.style.display='none');
+  }
+
+  // Super Admin бачить все
+}
 async function loadAll(){
   const [r1,r2,r3,r4,r5,r6]=await Promise.all([
     fetch('/api/dorms').then(r=>r.json()),
