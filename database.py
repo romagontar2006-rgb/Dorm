@@ -302,3 +302,49 @@ def get_user_by_email(email):
         return result.data[0]
 
     return None
+
+
+def get_users():
+    result = supabase.table("users").select("*").order("id").execute()
+    return result.data or []
+
+
+def add_user(data):
+    result = supabase.table("users").insert({
+        "name": data.get("name", ""),
+        "email": data.get("email", ""),
+        "password_hash": data.get("password", ""),
+        "role": data.get("role", "pracownik"),
+        "active": data.get("active", True)
+    }).execute()
+
+    return result.data[0]["id"] if result.data else None
+
+
+def update_user(user_id, fields):
+    data = {}
+
+    if "name" in fields:
+        data["name"] = fields["name"]
+
+    if "email" in fields:
+        data["email"] = fields["email"]
+
+    if "role" in fields:
+        data["role"] = fields["role"]
+
+    if "active" in fields:
+        data["active"] = fields["active"]
+
+    if "password" in fields and fields["password"]:
+        data["password_hash"] = fields["password"]
+
+    if not data:
+        return
+
+    supabase.table("users").update(data).eq("id", user_id).execute()
+
+
+def delete_user(user_id):
+    supabase.table("users").delete().eq("id", user_id).execute()
+

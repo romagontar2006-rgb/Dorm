@@ -388,6 +388,15 @@ def check_admin(password: str):
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=403, detail="Błąd autoryzacji")
 
+
+class UserIn(BaseModel):
+    name: str
+    email: str
+    password: str = ""
+    role: str = "pracownik"
+    active: bool = True
+
+
 # ── МОДЕЛІ ──
 class ChatMsg(BaseModel):
     text: str
@@ -435,6 +444,34 @@ class ResidentIn(BaseModel):
 class EmailAnalyze(BaseModel):
     email_text: str
     sender: Optional[str] = ""
+
+
+
+@app.get("/api/users")
+async def list_users(password: str = ""):
+    check_admin(password)
+    return db.get_users()
+
+
+@app.post("/api/users")
+async def create_user(data: UserIn, password: str = ""):
+    check_admin(password)
+    uid = db.add_user(data.dict())
+    return {"id": uid}
+
+
+@app.patch("/api/users/{user_id}")
+async def patch_user(user_id: int, data: dict, password: str = ""):
+    check_admin(password)
+    db.update_user(user_id, data)
+    return {"ok": True}
+
+
+@app.delete("/api/users/{user_id}")
+async def remove_user(user_id: int, password: str = ""):
+    check_admin(password)
+    db.delete_user(user_id)
+    return {"ok": True}    
 
 
 
