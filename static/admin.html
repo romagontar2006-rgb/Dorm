@@ -1407,37 +1407,18 @@ function canOpenPage(id){
 
   const permissions={
     super_admin:[
-      'dashboard',
-      'reservations',
-      'residents',
-      'tickets',
-      'dorms',
-      'finances',
-      'history',
-      'notifications',
-      'email',
-      'users'
-    ],
+  'dashboard','reservations','residents','tickets','dorms',
+  'finances','history','notifications','email','users','templates'
+],
 
-    admin:[
-      'dashboard',
-      'reservations',
-      'residents',
-      'tickets',
-      'dorms',
-      'finances',
-      'history',
-      'notifications',
-      'email'
-    ],
+admin:[
+  'dashboard','reservations','residents','tickets','dorms',
+  'finances','history','notifications','email','templates'
+],
 
-    pracownik:[
-      'dashboard',
-      'tickets',
-      'history',
-      'notifications',
-      'email'
-    ]
+pracownik:[
+  'dashboard','tickets','history','notifications','email','templates'
+]
   };
 
   return (permissions[role]||[]).includes(id);
@@ -1450,37 +1431,18 @@ function canOpenPage(id){
 
   const permissions={
     super_admin:[
-      'dashboard',
-      'reservations',
-      'residents',
-      'tickets',
-      'dorms',
-      'finances',
-      'history',
-      'notifications',
-      'email',
-      'users'
-    ],
+  'dashboard','reservations','residents','tickets','dorms',
+  'finances','history','notifications','email','users','templates'
+],
 
-    admin:[
-      'dashboard',
-      'reservations',
-      'residents',
-      'tickets',
-      'dorms',
-      'finances',
-      'history',
-      'notifications',
-      'email'
-    ],
+admin:[
+  'dashboard','reservations','residents','tickets','dorms',
+  'finances','history','notifications','email','templates'
+],
 
-    pracownik:[
-      'dashboard',
-      'tickets',
-      'history',
-      'notifications',
-      'email'
-    ]
+pracownik:[
+  'dashboard','tickets','history','notifications','email','templates'
+]
   };
 
   return (permissions[role]||[]).includes(id);
