@@ -398,6 +398,36 @@ tr:hover td{background:#fafbff}
 }
 
 
+
+.form-card{
+  background:#f8fafc;
+  border-left:4px solid var(--primary);
+  border-radius:14px;
+  padding:18px;
+  margin-top:16px;
+}
+
+.form-card h3{
+  margin:0 0 14px;
+  color:var(--primary);
+  font-size:15px;
+}
+
+.form-card label{
+  display:block;
+  margin-top:10px;
+  margin-bottom:5px;
+  font-size:12px;
+  font-weight:700;
+  color:#555;
+}
+
+.form-card input,
+.form-card select{
+  width:100%;
+}
+
+
 </style>
 </head>
 <body>
@@ -543,23 +573,17 @@ tr:hover td{background:#fafbff}
   </div>
 </div>
 
-<!-- DRAWER ROOM -->
+<!-- MODAL ROOM -->
 <div class="modal" id="modal-room">
-  <div class="modal-content drawer-card">
-    <div class="drawer-header">
-      <div>
-        <h2>🚪 Pokój</h2>
-        <p>Dodaj lub edytuj pokój w wybranym mieszkaniu</p>
-      </div>
-      <button class="drawer-close" onclick="closeModal('modal-room')">×</button>
-    </div>
+  <div class="modal-content" style="max-width:620px">
+    <h2>🚪 Pokój</h2>
 
     <input type="hidden" id="room-id">
     <input type="hidden" id="room-dorm-id">
     <input type="hidden" id="room-section-id">
 
-    <div class="form-section">
-      <h3>Podstawowe informacje</h3>
+    <div class="form-card">
+      <h3>📋 Dane pokoju</h3>
 
       <label>NAZWA POKOJU</label>
       <input id="room-name" placeholder="np. 1A, 6M2/A1">
@@ -574,10 +598,6 @@ tr:hover td{background:#fafbff}
           <input id="room-price" type="number" value="0">
         </div>
       </div>
-    </div>
-
-    <div class="form-section">
-      <h3>Ustawienia pokoju</h3>
 
       <div class="form-grid-2">
         <div>
@@ -588,7 +608,6 @@ tr:hover td{background:#fafbff}
             <option value="female">Kobiety</option>
           </select>
         </div>
-
         <div>
           <label>STATUS</label>
           <select id="room-active">
@@ -599,13 +618,12 @@ tr:hover td{background:#fafbff}
       </div>
     </div>
 
-    <div class="drawer-footer">
+    <div class="modal-footer">
       <button class="btn btn-light" onclick="closeModal('modal-room')">Anuluj</button>
       <button class="btn btn-primary" onclick="saveRoom()">✓ Zapisz pokój</button>
     </div>
   </div>
 </div>
-
 
 
 <!-- LOGIN -->
