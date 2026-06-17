@@ -640,6 +640,67 @@ tr:hover td{background:#fafbff}
 </div>
 
 
+
+<div class="modal" id="modal-template-preview">
+  <div class="modal-content" style="max-width:900px">
+
+    <div class="modal-header">
+      <h2>📨 Podgląd szablonu</h2>
+      <button class="modal-close"
+              onclick="closeModal('modal-template-preview')">
+        ✕
+      </button>
+    </div>
+
+    <div class="form-card">
+      <div style="
+          padding:12px;
+          border-radius:10px;
+          background:#eef6ff;
+          border:1px solid #cfe2ff;
+          margin-bottom:15px;
+      ">
+        ℹ️ Podgląd z przykładowymi danymi mieszkańca.
+      </div>
+
+      <label>TEMAT</label>
+
+      <div id="preview-subject"
+           style="
+              padding:14px;
+              border:1px solid #dbe2ea;
+              border-radius:10px;
+              background:#f8fafc;
+              margin-bottom:20px;
+           ">
+      </div>
+
+      <label>TREŚĆ</label>
+
+      <div id="preview-body"
+           style="
+              min-height:250px;
+              padding:18px;
+              border:1px solid #dbe2ea;
+              border-radius:10px;
+              background:white;
+              white-space:pre-wrap;
+              line-height:1.7;
+           ">
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-light"
+              onclick="closeModal('modal-template-preview')">
+        Zamknij
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
 <!-- LOGIN -->
 <div class="login-wrap" id="login-wrap">
   <div class="login-box">
@@ -1900,29 +1961,35 @@ async function deleteTemplate(id){
 
 
 function previewTemplate(id){
-  const t=templates.find(x=>String(x.id)===String(id));
-  if(!t)return;
 
-  const sample={
-    title:'Panie',
-    first_name:'Jan',
-    last_name:'Kowalski',
-    full_name:'Jan Kowalski',
-    dorm:'Czarna Droga 41',
-    room:'3A',
-    contract_end:'30.09.2026',
-    email:'jan.kowalski@example.com'
+  const t = templates.find(x => String(x.id) === String(id));
+  if(!t) return;
+
+  const sample = {
+      title:'Panie',
+      first_name:'Jan',
+      last_name:'Kowalski',
+      full_name:'Jan Kowalski',
+      dorm:'Czarna Droga 41',
+      room:'3A',
+      contract_end:'30.09.2026',
+      email:'jan.kowalski@example.com'
   };
 
-  let body=t.body||'';
-  let subject=t.subject||'';
+  let body = t.body || '';
+  let subject = t.subject || '';
 
   Object.entries(sample).forEach(([k,v])=>{
-    body=body.replaceAll(`{${k}}`,v);
-    subject=subject.replaceAll(`{${k}}`,v);
+      body = body.replaceAll(`{${k}}`,v);
+      subject = subject.replaceAll(`{${k}}`,v);
   });
 
-  alert(`TEMAT:\n${subject}\n\nTREŚĆ:\n${body}`);
+  document.getElementById('preview-subject').innerText = subject;
+  document.getElementById('preview-body').innerText = body;
+
+  document
+    .getElementById('modal-template-preview')
+    .classList.add('open');
 }
 
 
