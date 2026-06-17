@@ -1660,7 +1660,10 @@ function applyTemplateToNotification(){
   const template=
     templates.find(t=>String(t.id)===String(id));
 
-  if(!template) return;
+  if(!template){
+  alert('Wybierz szablon');
+  return;
+}
 
   document.getElementById('custom-message-box').style.display='block';
 
@@ -1736,7 +1739,8 @@ function getNotificationRecipients(){
 
 function generateNotifications(){
   const people=getNotificationRecipients();
-  const tpl=document.getElementById('notif-template').value;
+  const templateId =
+  document.getElementById('notification-template').value;
   const out=document.getElementById('notif-output');
 
   if(!people.length){
@@ -1797,43 +1801,42 @@ function generateNotifications(){
   }).join('');
 }
 
-function makePaymentReminderEmail(r, amount){
-  const genderStart = r.gender==='male' ? 'Szanowny Panie' : 'Szanowna Pani';
+function buildTemplate(template,resident){
 
-  return `${genderStart},
+  let body = template.body || '';
+  let subject = template.subject || '';
 
-zgodnie z naszymi danymi posiada Pan/Pani zaległość w opłatach za pobyt w Zespole Pokoi Akademickich przy ${dormName(r.dorm_id)}, pokój ${r.room}, w wysokości ${amount} PLN.
+  const vars = {
+    gender_title:
+      resident.gender === 'female'
+        ? 'Pani'
+        : 'Pan',
 
-Prosimy o niezwłoczne uregulowanie należności lub przesłanie potwierdzenia dokonania wpłaty, jeśli przelew został już zrealizowany.
+    first_name:
+      resident.full_name?.split(' ')[0] || '',
 
-Jednocześnie przypominamy, że zgodnie z warunkami umowy opłata za zakwaterowanie powinna zostać wniesiona do 10. dnia każdego miesiąca.
+    last_name:
+      resident.full_name?.split(' ').slice(1).join(' ') || '',
 
-Z poważaniem,
-Administracja Akademików WSG`;
-}
+    full_name:
+      resident.full_name || '',
 
-function makePaymentDemandEmail(r, amount){
-  const today=new Date().toLocaleDateString('pl-PL');
-  const genderStart = r.gender==='male' ? 'Szanowny Panie' : 'Szanowna Pani';
+    dorm:
+      getDormName(resident.dorm_id),
 
-  return `Data: ${today}
+    room:
+      resident.room || '',
 
-${genderStart} ${r.full_name},
+    email:
+      getResidentEmails(resident)[0] || ''
+  };
 
-pomimo wcześniejszych monitów oraz przypomnień kierowanych do Pana/Pani w sprawie zaległości w opłatach za zakwaterowanie w akademiku, do dnia dzisiejszego nie została uregulowana należność w wysokości ${amount} PLN.
+  Object.entries(vars).forEach(([k,v])=>{
+    body = body.replaceAll(`{${k}}`,v);
+    subject = subject.replaceAll(`{${k}}`,v);
+  });
 
-Na podstawie zapisów zawartej umowy najmu miejsca w pokojach studenckich, brak terminowego wnoszenia opłat stanowi naruszenie warunków korzystania z miejsca w akademiku.
-
-W związku z powyższym wzywamy do natychmiastowej wpłaty całej zaległej kwoty na dotychczasowy numer konta.
-
-Termin uregulowania płatności: 3 dni od daty otrzymania niniejszego pisma.
-
-Brak zapłaty w wyznaczonym terminie może skutkować wszczęciem procedury rozwiązania umowy zakwaterowania oraz usunięciem z akademika.
-
-Jeżeli należność została w międzyczasie uregulowana — prosimy o niezwłoczne przesłanie potwierdzenia przelewu na adres e-mail: dormitory@byd.pl.
-
-Z poważaniem,
-Administracja Akademików WSG`;
+  return {subject,body};
 }
 
 function copyText(text){
