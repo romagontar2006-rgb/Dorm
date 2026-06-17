@@ -1737,65 +1737,86 @@ function getNotificationRecipients(){
   });
 }
 
+
+function buildTemplate(template, resident){
+  let body = template.body || '';
+  let subject = template.subject || '';
+
+  const parts = (resident.full_name || '').trim().split(' ');
+  const firstName = parts[0] || '';
+  const lastName = parts.slice(1).join(' ') || '';
+
+  const vars = {
+    title: resident.gender === 'female' ? 'Pani' : 'Pan',
+    gender_title: resident.gender === 'female' ? 'Pani' : 'Pan',
+    first_name: firstName,
+    last_name: lastName,
+    full_name: resident.full_name || '',
+    dorm: getDormName(resident.dorm_id),
+    room: resident.room || '',
+    contract_end: resident.contract_end || '',
+    email: getResidentEmails(resident)[0] || ''
+  };
+
+  Object.entries(vars).forEach(([k,v])=>{
+    subject = subject.replaceAll(`{${k}}`, v);
+    body = body.replaceAll(`{${k}}`, v);
+  });
+
+  return {subject, body};
+}
+
+
 function generateNotifications(){
-  const people=getNotificationRecipients();
-  const templateId =
-  document.getElementById('notification-template').value;
-  const out=document.getElementById('notif-output');
+  const people = getNotificationRecipients();
+  const templateId = document.getElementById('notification-template').value;
+  const out = document.getElementById('notif-output');
 
   if(!people.length){
-    out.innerHTML='<div class="empty">Brak odbiorców z emailem</div>';
+    out.innerHTML = '<div class="empty">Brak odbiorców z emailem</div>';
     return;
   }
 
-  // INFORMACJA WŁASNA — один лист до всіх
-  if(tpl==='custom'){
-    const subject=document.getElementById('custom-subject').value || 'Informacja';
-    const body=document.getElementById('custom-body').value || '';
-
-    const emails=[...new Set(
-      people.flatMap(r=>getResidentEmails(r))
-    )];
-
-    const mailto=`mailto:${emails.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-    out.innerHTML=`
-      <div class="info-card" style="border-left-color:#2563eb">
-        <h4>📧 Informacja własna</h4>
-        <p><b>Odbiorcy:</b> ${emails.length} adresów</p>
-        <p style="font-size:12px;color:#666;max-height:120px;overflow:auto">${emails.join('<br>')}</p>
-
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <a class="btn btn-primary btn-sm" href="${mailto}">📧 Otwórz jeden email do wszystkich</a>
-          <button class="btn btn-light btn-sm" onclick="copyText(\`${emails.join(', ').replace(/`/g,'\\`')}\`)">📋 Kopiuj adresy</button>
-          <button class="btn btn-light btn-sm" onclick="copyText(\`${body.replace(/`/g,'\\`')}\`)">📋 Kopiuj treść</button>
-        </div>
-      </div>
-    `;
+  if(!templateId){
+    alert('Wybierz szablon wiadomości.');
     return;
   }
 
-  // PŁATNOŚCI — osobny email do każdej osoby
-  out.innerHTML=people.map(r=>{
-    const subject = tpl==='payment_demand'
-      ? 'WEZWANIE DO NATYCHMIASTOWEJ ZAPŁATY'
-      : 'Payment Reminder / Przypomnienie o płatności';
+  const template = templates.find(t => String(t.id) === String(templateId));
 
-    const amount = prompt(`Kwota zaległości dla ${r.full_name} (PLN):`, '850') || '850';
+  if(!template){
+    alert('Nie znaleziono szablonu.');
+    return;
+  }
 
-    const body = tpl==='payment_demand'
-      ? makePaymentDemandEmail(r, amount)
-      : makePaymentReminderEmail(r, amount);
-
-    const emails=getResidentEmails(r).join(',');
-    const mailto=`mailto:${emails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  out.innerHTML = people.map(r=>{
+    const msg = buildTemplate(template, r);
+    const emails = getResidentEmails(r).join(',');
+    const mailto = `mailto:${emails}?subject=${encodeURIComponent(msg.subject)}&body=${encodeURIComponent(msg.body)}`;
 
     return `
-      <div class="info-card">
-        <h4>${r.full_name}</h4>
-        <p>${getResidentEmails(r).join('<br>')}</p>
-        <a class="btn btn-primary btn-sm" href="${mailto}">📧 Otwórz email</a>
-        <button class="btn btn-light btn-sm" onclick="copyText(\`${body.replace(/`/g,'\\`')}\`)">📋 Kopiuj</button>
+      <div class="info-card" style="margin-bottom:12px">
+        <h4>📧 ${r.full_name}</h4>
+        <p style="font-size:12px;color:#64748b">${getResidentEmails(r).join('<br>')}</p>
+
+        <div style="margin-top:10px">
+          <b>Temat:</b>
+          <div style="padding:10px;background:#f8fafc;border-radius:8px;margin-top:4px">
+            ${msg.subject}
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <b>Treść:</b>
+          <div style="padding:12px;background:white;border:1px solid #e5e7eb;border-radius:8px;margin-top:4px;white-space:pre-wrap">
+            ${msg.body}
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <a class="btn btn-primary btn-sm" href="${mailto}">📧 Otwórz email</a>
+          <button class="btn btn-light btn-sm" onclick="copyText(\`${msg.body.replace(/`/g,'\\`')}\`)">📋 Kopiuj treść</button>
+        </div>
       </div>
     `;
   }).join('');
