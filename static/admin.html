@@ -405,6 +405,46 @@ tr:hover td{background:#fafbff}
 </div>
 
 
+<!-- MODAL DORMITORY -->
+<div class="modal" id="modal-dormitory">
+  <div class="modal-content" style="max-width:620px">
+    <h2>🏢 Akademik</h2>
+
+    <input type="hidden" id="dormitory-id">
+
+    <label>NAZWA AKADEMIKA</label>
+    <input id="dormitory-name" placeholder="ul. Czarna Droga 41">
+
+    <label>ADRES</label>
+    <input id="dormitory-address" placeholder="ul. Czarna Droga 41">
+
+    <div class="form-grid-2">
+      <div>
+        <label>KOD POCZTOWY</label>
+        <input id="dormitory-postal" placeholder="85-236">
+      </div>
+      <div>
+        <label>MIASTO</label>
+        <input id="dormitory-city" placeholder="Bydgoszcz" value="Bydgoszcz">
+      </div>
+    </div>
+
+    <label>KOSZT BUDYNKU / MIESIĄC</label>
+    <input id="dormitory-cost" type="number" placeholder="61000">
+
+    <label>STATUS</label>
+    <select id="dormitory-active">
+      <option value="true">Aktywny</option>
+      <option value="false">Nieaktywny</option>
+    </select>
+
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('modal-dormitory')">Anuluj</button>
+      <button class="btn btn-primary" onclick="saveDormitory()">✓ Zapisz</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- LOGIN -->
 <div class="login-wrap" id="login-wrap">
@@ -686,8 +726,15 @@ tr:hover td{background:#fafbff}
       </div>
 
       <!-- ГУРТОЖИТКИ -->
+       
       <div class="page" id="page-dorms">
-        <div class="section-title"><span data-t="dorms_title">Akademiki</span></div>
+  <div class="section-title">🏢 Akademiki</div>
+
+  <button class="btn btn-primary" onclick="openAddDormitory()">
+    ➕ Dodaj akademik
+  </button>
+
+  <div id="dormitories-list" style="margin-top:16px"></div>
         <div id="dorms-admin"></div>
       </div>
 
@@ -3198,6 +3245,126 @@ async function saveDorm(id){
   dorms=await fetch('/api/dorms').then(r=>r.json());
   alert('Zapisano ✓');
 }
+
+
+let dormitories=[];
+
+async function loadDormitories(){
+  dormitories=await fetch('/api/dormitories').then(r=>r.json());
+}
+
+async function renderDormsAdmin(){
+  await loadDormitories();
+
+  const box=document.getElementById('dormitories-list');
+  if(!box)return;
+
+  if(!dormitories.length){
+    box.innerHTML='<div class="empty">Brak akademików. Dodaj pierwszy akademik.</div>';
+    return;
+  }
+
+  box.innerHTML=dormitories.map(d=>`
+    <div class="info-card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+        <div>
+          <h3 style="margin:0 0 6px;color:var(--primary)">🏢 ${d.name}</h3>
+          <div style="font-size:13px;color:#666">${d.address||''}, ${d.postal_code||''} ${d.city||''}</div>
+          <div style="font-size:13px;margin-top:6px">
+            Koszt budynku: <b>${Number(d.building_cost||0).toLocaleString('pl-PL')} PLN / miesiąc</b>
+          </div>
+          <div style="font-size:12px;margin-top:6px">
+            ${d.active?'<span class="badge green">Aktywny</span>':'<span class="badge red">Nieaktywny</span>'}
+          </div>
+        </div>
+
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-primary" onclick="openEditDormitory(${d.id})">✏️ Edytuj</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteDormitory(${d.id})">🗑 Usuń</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openAddDormitory(){
+  document.getElementById('dormitory-id').value='';
+  document.getElementById('dormitory-name').value='';
+  document.getElementById('dormitory-address').value='';
+  document.getElementById('dormitory-postal').value='';
+  document.getElementById('dormitory-city').value='Bydgoszcz';
+  document.getElementById('dormitory-cost').value='';
+  document.getElementById('dormitory-active').value='true';
+  document.getElementById('modal-dormitory').classList.add('open');
+}
+
+function openEditDormitory(id){
+  const d=dormitories.find(x=>String(x.id)===String(id));
+  if(!d)return;
+
+  document.getElementById('dormitory-id').value=d.id;
+  document.getElementById('dormitory-name').value=d.name||'';
+  document.getElementById('dormitory-address').value=d.address||'';
+  document.getElementById('dormitory-postal').value=d.postal_code||'';
+  document.getElementById('dormitory-city').value=d.city||'Bydgoszcz';
+  document.getElementById('dormitory-cost').value=d.building_cost||0;
+  document.getElementById('dormitory-active').value=String(!!d.active);
+  document.getElementById('modal-dormitory').classList.add('open');
+}
+
+async function saveDormitory(){
+  const id=document.getElementById('dormitory-id').value;
+
+  const payload={
+    name:document.getElementById('dormitory-name').value.trim(),
+    address:document.getElementById('dormitory-address').value.trim(),
+    postal_code:document.getElementById('dormitory-postal').value.trim(),
+    city:document.getElementById('dormitory-city').value.trim(),
+    building_cost:Number(document.getElementById('dormitory-cost').value||0),
+    active:document.getElementById('dormitory-active').value==='true'
+  };
+
+  if(!payload.name){
+    alert('Podaj nazwę akademika.');
+    return;
+  }
+
+  const url=id?`/api/dormitories/${id}`:'/api/dormitories';
+  const method=id?'PUT':'POST';
+
+  const res=await fetch(url,{
+    method,
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+
+  if(!res.ok){
+    alert('Błąd zapisu akademika.');
+    return;
+  }
+
+  closeModal('modal-dormitory');
+  await renderDormsAdmin();
+  await loadAll();
+}
+
+async function deleteDormitory(id){
+  const d=dormitories.find(x=>String(x.id)===String(id));
+  if(!d)return;
+
+  if(!confirm(`Usunąć akademik: ${d.name}?`))return;
+
+  const res=await fetch(`/api/dormitories/${id}`,{method:'DELETE'});
+
+  if(!res.ok){
+    alert('Błąd usuwania akademika.');
+    return;
+  }
+
+  await renderDormsAdmin();
+  await loadAll();
+}
+
 
 // ── EMAIL AI ──
 async function analyzeEmail(){
