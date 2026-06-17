@@ -709,6 +709,9 @@ tr:hover td{background:#fafbff}
       <button class="sidebar-btn" onclick="showPage('notifications',this)">
   📧 Powiadomienia
 </button>
+<button class="sidebar-btn" onclick="showPage('templates',this)">
+  📨 Szablony
+</button>
     </div>
   <!-- POWIADOMIENIA -->
 <div class="page" id="page-notifications">
@@ -789,6 +792,25 @@ tr:hover td{background:#fafbff}
   <div id="notif-output"></div>
 </div>
     <div class="content">
+
+
+
+<div class="page" id="page-templates">
+
+  <div class="section-title">
+    📨 Szablony wiadomości
+  </div>
+
+  <button class="btn btn-primary"
+          onclick="openAddTemplate()"
+          style="margin-bottom:15px">
+      ➕ Dodaj szablon
+  </button>
+
+  <div id="templates-list"></div>
+
+</div>
+
 
       <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
@@ -1482,17 +1504,17 @@ function showPage(id,btn){
   page.classList.add('active');
   if(btn)btn.classList.add('active');
 
-  const renders={
-    dashboard:renderDashboard,
-    reservations:renderReservations,
-    residents:renderResidents,
-    tickets:renderTickets,
-    dorms:renderDormsAdmin,
-    finances:renderFinances,
-    history:renderHistory,
-    notifications:renderNotifications,
-    users:renderUsers
-  };
+ const renders={
+ dashboard:renderDashboard,
+ reservations:renderReservations,
+ residents:renderResidents,
+ tickets:renderTickets,
+ dorms:renderDormsAdmin,
+ finances:renderFinances,
+ history:renderHistory,
+ notifications:renderNotifications,
+ templates:renderTemplates
+};
 
   if(renders[id])renders[id]();
 }
@@ -1802,6 +1824,145 @@ function renderTodayTasks(){
   const el = document.getElementById('today-tasks');
   if(el) el.innerHTML = html;
 }
+
+
+
+let templates=[];
+
+async function loadTemplates(){
+  templates=await fetch('/api/templates').then(r=>r.json());
+}
+
+async function renderTemplates(){
+  await loadTemplates();
+
+  const box=document.getElementById('templates-list');
+  if(!box)return;
+
+  if(!templates.length){
+    box.innerHTML='<div class="empty">Brak szablonów</div>';
+    return;
+  }
+
+  box.innerHTML=templates.map(t=>`
+    <div class="info-card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;gap:12px">
+        <div>
+          <h3 style="margin:0 0 6px">📨 ${t.name}</h3>
+          <div style="font-size:13px;color:#64748b">${t.subject||'Bez tematu'}</div>
+          <div style="margin-top:8px">
+            <span class="badge blue">${(t.language||'pl').toUpperCase()}</span>
+            ${t.active?'<span class="badge green">Aktywny</span>':'<span class="badge red">Nieaktywny</span>'}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-light" onclick="previewTemplate(${t.id})">👁 Podgląd</button>
+          <button class="btn btn-sm btn-primary" onclick="openEditTemplate(${t.id})">✏️ Edytuj</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTemplate(${t.id})">🗑 Usuń</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openAddTemplate(){
+  document.getElementById('tpl-id').value='';
+  document.getElementById('tpl-name').value='';
+  document.getElementById('tpl-language').value='pl';
+  document.getElementById('tpl-active').value='true';
+  document.getElementById('tpl-subject').value='';
+  document.getElementById('tpl-body').value='';
+  document.getElementById('modal-template').classList.add('open');
+}
+
+function openEditTemplate(id){
+  const t=templates.find(x=>String(x.id)===String(id));
+  if(!t)return;
+
+  document.getElementById('tpl-id').value=t.id;
+  document.getElementById('tpl-name').value=t.name||'';
+  document.getElementById('tpl-language').value=t.language||'pl';
+  document.getElementById('tpl-active').value=String(t.active!==false);
+  document.getElementById('tpl-subject').value=t.subject||'';
+  document.getElementById('tpl-body').value=t.body||'';
+  document.getElementById('modal-template').classList.add('open');
+}
+
+async function saveTemplate(){
+  const id=document.getElementById('tpl-id').value;
+
+  const payload={
+    name:document.getElementById('tpl-name').value.trim(),
+    type:'email',
+    language:document.getElementById('tpl-language').value,
+    subject:document.getElementById('tpl-subject').value.trim(),
+    body:document.getElementById('tpl-body').value,
+    active:document.getElementById('tpl-active').value==='true'
+  };
+
+  if(!payload.name || !payload.body){
+    alert('Uzupełnij nazwę i treść szablonu.');
+    return;
+  }
+
+  const url=id?`/api/templates/${id}`:'/api/templates';
+  const method=id?'PUT':'POST';
+
+  const res=await fetch(url,{
+    method,
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+
+  if(!res.ok){
+    alert('Błąd zapisu szablonu.');
+    return;
+  }
+
+  closeModal('modal-template');
+  await renderTemplates();
+}
+
+async function deleteTemplate(id){
+  if(!confirm('Usunąć szablon?'))return;
+
+  const res=await fetch(`/api/templates/${id}`,{method:'DELETE'});
+  if(!res.ok){
+    alert('Błąd usuwania szablonu.');
+    return;
+  }
+
+  await renderTemplates();
+}
+
+
+
+function previewTemplate(id){
+  const t=templates.find(x=>String(x.id)===String(id));
+  if(!t)return;
+
+  const sample={
+    title:'Panie',
+    first_name:'Jan',
+    last_name:'Kowalski',
+    full_name:'Jan Kowalski',
+    dorm:'Czarna Droga 41',
+    room:'3A',
+    contract_end:'30.09.2026',
+    email:'jan.kowalski@example.com'
+  };
+
+  let body=t.body||'';
+  let subject=t.subject||'';
+
+  Object.entries(sample).forEach(([k,v])=>{
+    body=body.replaceAll(`{${k}}`,v);
+    subject=subject.replaceAll(`{${k}}`,v);
+  });
+
+  alert(`TEMAT:\n${subject}\n\nTREŚĆ:\n${body}`);
+}
+
 
 
 function renderContractAlerts(){
@@ -4730,6 +4891,57 @@ if(gender === 'female' && malesInRoom > 0){
       </button>
     </div>
 
+  </div>
+</div>
+
+
+
+<div class="modal" id="modal-template">
+  <div class="modal-content" style="max-width:760px">
+    <h2>📨 Szablon wiadomości</h2>
+
+    <input type="hidden" id="tpl-id">
+
+    <div class="form-card">
+      <h3>📋 Dane szablonu</h3>
+
+      <label>NAZWA SZABLONU</label>
+      <input id="tpl-name" placeholder="np. Przypomnienie o płatności">
+
+      <div class="form-grid-2">
+        <div>
+          <label>JĘZYK</label>
+          <select id="tpl-language">
+            <option value="pl">Polski</option>
+            <option value="en">English</option>
+            <option value="uk">Українська</option>
+            <option value="ru">Русский</option>
+          </select>
+        </div>
+        <div>
+          <label>STATUS</label>
+          <select id="tpl-active">
+            <option value="true">Aktywny</option>
+            <option value="false">Nieaktywny</option>
+          </select>
+        </div>
+      </div>
+
+      <label>TEMAT WIADOMOŚCI</label>
+      <input id="tpl-subject" placeholder="Temat emaila">
+
+      <label>TREŚĆ WIADOMOŚCI</label>
+      <textarea id="tpl-body" rows="9" placeholder="Dzień dobry {title} {last_name}, ..."></textarea>
+
+      <div style="font-size:12px;color:#64748b;margin-top:8px">
+        Zmienne: {title}, {first_name}, {last_name}, {full_name}, {dorm}, {room}, {contract_end}, {email}
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('modal-template')">Anuluj</button>
+      <button class="btn btn-primary" onclick="saveTemplate()">✓ Zapisz</button>
+    </div>
   </div>
 </div>
 

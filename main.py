@@ -826,6 +826,32 @@ async def api_delete_room(room_id: int):
     return {"ok": True}
 
 
+
+# ── TEMPLATES ──
+
+@app.get("/api/templates")
+async def get_templates():
+    return db.get_templates()
+
+
+@app.post("/api/templates")
+async def create_template(data: dict):
+    return db.add_template(data)
+
+
+@app.put("/api/templates/{template_id}")
+async def update_template(template_id: int, data: dict):
+    db.update_template(template_id, data)
+    return {"ok": True}
+
+
+@app.delete("/api/templates/{template_id}")
+async def delete_template(template_id: int):
+    db.delete_template(template_id)
+    return {"ok": True}
+
+
+
 # ── ГУРТОЖИТКИ ──
 @app.get("/api/dorms")
 async def get_dorms():

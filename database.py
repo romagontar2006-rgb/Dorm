@@ -502,3 +502,46 @@ def get_rooms_structure_from_db():
     return structure
 
 
+
+
+# ────────────────────────────────────────────
+# MESSAGE TEMPLATES
+# ────────────────────────────────────────────
+
+def get_templates():
+    result = (
+        supabase.table("message_templates")
+        .select("*")
+        .order("id")
+        .execute()
+    )
+    return result.data or []
+
+
+def add_template(data):
+    result = (
+        supabase.table("message_templates")
+        .insert(data)
+        .execute()
+    )
+    return result.data[0]
+
+
+def update_template(template_id, data):
+    (
+        supabase.table("message_templates")
+        .update(data)
+        .eq("id", template_id)
+        .execute()
+    )
+
+
+def delete_template(template_id):
+    (
+        supabase.table("message_templates")
+        .delete()
+        .eq("id", template_id)
+        .execute()
+    )
+
+
