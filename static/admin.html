@@ -825,11 +825,14 @@ tr:hover td{background:#fafbff}
     <div class="form-group">
       <label>Szablon wiadomości</label>
       <select id="notif-template" onchange="renderNotifications()">
+  <option value="payment_reminder">Payment Reminder / Przypomnienie o płatności</option>
+  <option value="payment_demand">WEZWANIE DO NATYCHMIASTOWEJ ZAPŁATY</option>
+  <option value="custom">Informacja własna</option>
 </select>
-<button class="btn btn-primary" onclick="generateNotifications()">
-  📧 Generuj wiadomości
-</button>
-    
+    </div>
+
+    <button class="btn btn-primary" onclick="generateNotifications()">📧 Generuj wiadomości</button>
+  </div>
 
 
 <div class="form-card">
