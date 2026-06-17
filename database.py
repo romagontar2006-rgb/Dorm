@@ -469,3 +469,36 @@ def get_all_rooms():
     return result.data or []
 
 
+
+def get_rooms_structure_from_db():
+    dorms = get_dormitories()
+    sections = get_all_sections()
+    rooms = get_all_rooms()
+
+    structure = {}
+
+    for dorm in dorms:
+        dorm_id = dorm["id"]
+        structure[dorm_id] = {}
+
+        dorm_sections = [s for s in sections if s["dorm_id"] == dorm_id]
+
+        for sec in dorm_sections:
+            sec_name = sec["name"]
+            structure[dorm_id][sec_name] = {}
+
+            sec_rooms = [
+                r for r in rooms
+                if r["section_id"] == sec["id"] and r.get("active", True)
+            ]
+
+            for room in sec_rooms:
+                structure[dorm_id][sec_name][room["name"]] = {
+                    "capacity": room.get("capacity", 1),
+                    "gender": room.get("gender", "any"),
+                    "price_per_person": room.get("price_per_person", 0)
+                }
+
+    return structure
+
+

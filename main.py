@@ -829,6 +829,21 @@ async def api_delete_room(room_id: int):
 # ── ГУРТОЖИТКИ ──
 @app.get("/api/dorms")
 async def get_dorms():
+    new_dorms = db.get_dormitories()
+
+    if new_dorms:
+        return [
+            {
+                "id": d["id"],
+                "name": d["name"],
+                "address": d.get("address", ""),
+                "free_places": 0,
+                "total_places": 0
+            }
+            for d in new_dorms
+            if d.get("active", True)
+        ]
+
     return db.get_dorms()
 
 @app.put("/api/dorms/{dorm_id}")
@@ -839,6 +854,11 @@ async def update_dorm(dorm_id: int, data: dict, password: str = ""):
 
 @app.get("/api/rooms-structure")
 async def get_rooms():
+    new_structure = db.get_rooms_structure_from_db()
+
+    if new_structure:
+        return new_structure
+
     return db.get_rooms_structure()
 
 # ── БРОНЮВАННЯ ──
