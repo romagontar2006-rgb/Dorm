@@ -825,14 +825,11 @@ tr:hover td{background:#fafbff}
     <div class="form-group">
       <label>Szablon wiadomości</label>
       <select id="notif-template" onchange="renderNotifications()">
-  <option value="payment_reminder">Payment Reminder / Przypomnienie o płatności</option>
-  <option value="payment_demand">WEZWANIE DO NATYCHMIASTOWEJ ZAPŁATY</option>
-  <option value="custom">Informacja własna</option>
 </select>
-    </div>
-
-    <button class="btn btn-primary" onclick="generateNotifications()">📧 Generuj wiadomości</button>
-  </div>
+<button class="btn btn-primary" onclick="generateNotifications()">
+  📧 Generuj wiadomości
+</button>
+    
 
 
 <div class="form-card">
@@ -1821,6 +1818,15 @@ function generateNotifications(){
     `;
   }).join('');
 }
+
+
+
+function getDormName(dormId){
+  const d=dorms.find(x=>String(x.id)===String(dormId));
+  return d ? d.name : '';
+}
+
+
 
 function buildTemplate(template,resident){
 
