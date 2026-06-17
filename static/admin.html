@@ -446,6 +446,73 @@ tr:hover td{background:#fafbff}
 </div>
 
 
+
+<!-- MODAL SECTION -->
+<div class="modal" id="modal-section">
+  <div class="modal-content" style="max-width:520px">
+    <h2>🏠 Mieszkanie / sekcja</h2>
+
+    <input type="hidden" id="section-id">
+    <input type="hidden" id="section-dorm-id">
+
+    <label>NAZWA MIESZKANIA / SEKCJI</label>
+    <input id="section-name" placeholder="np. M2, M3, 1, 5">
+
+    <label>KOLEJNOŚĆ</label>
+    <input id="section-order" type="number" value="0">
+
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('modal-section')">Anuluj</button>
+      <button class="btn btn-primary" onclick="saveSection()">✓ Zapisz</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ROOM -->
+<div class="modal" id="modal-room">
+  <div class="modal-content" style="max-width:620px">
+    <h2>🚪 Pokój</h2>
+
+    <input type="hidden" id="room-id">
+    <input type="hidden" id="room-dorm-id">
+    <input type="hidden" id="room-section-id">
+
+    <label>NAZWA POKOJU</label>
+    <input id="room-name" placeholder="np. 1A, 6M2/A1">
+
+    <div class="form-grid-2">
+      <div>
+        <label>LICZBA MIEJSC</label>
+        <input id="room-capacity" type="number" value="1">
+      </div>
+      <div>
+        <label>CENA ZA OSOBĘ</label>
+        <input id="room-price" type="number" value="0">
+      </div>
+    </div>
+
+    <label>PŁEĆ</label>
+    <select id="room-gender">
+      <option value="any">Dowolna</option>
+      <option value="male">Mężczyźni</option>
+      <option value="female">Kobiety</option>
+    </select>
+
+    <label>STATUS</label>
+    <select id="room-active">
+      <option value="true">Aktywny</option>
+      <option value="false">Nieaktywny</option>
+    </select>
+
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('modal-room')">Anuluj</button>
+      <button class="btn btn-primary" onclick="saveRoom()">✓ Zapisz</button>
+    </div>
+  </div>
+</div>
+
+
+
 <!-- LOGIN -->
 <div class="login-wrap" id="login-wrap">
   <div class="login-box">
@@ -3248,9 +3315,20 @@ async function saveDorm(id){
 
 
 let dormitories=[];
+let dormSections=[];
+let dormRooms=[];
+let openedDormitoryId=null;
 
 async function loadDormitories(){
-  dormitories=await fetch('/api/dormitories').then(r=>r.json());
+  const [d,s,r]=await Promise.all([
+    fetch('/api/dormitories').then(x=>x.json()),
+    fetch('/api/dorm-sections').then(x=>x.json()),
+    fetch('/api/dorm-rooms').then(x=>x.json())
+  ]);
+
+  dormitories=d;
+  dormSections=s;
+  dormRooms=r;
 }
 
 async function renderDormsAdmin(){
@@ -3260,31 +3338,121 @@ async function renderDormsAdmin(){
   if(!box)return;
 
   if(!dormitories.length){
-    box.innerHTML='<div class="empty">Brak akademików. Dodaj pierwszy akademik.</div>';
+    box.innerHTML=`
+      <div class="empty" style="padding:28px">
+        🏢 Brak akademików. Dodaj pierwszy akademik.
+      </div>`;
     return;
   }
 
-  box.innerHTML=dormitories.map(d=>`
-    <div class="info-card" style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
-        <div>
-          <h3 style="margin:0 0 6px;color:var(--primary)">🏢 ${d.name}</h3>
-          <div style="font-size:13px;color:#666">${d.address||''}, ${d.postal_code||''} ${d.city||''}</div>
-          <div style="font-size:13px;margin-top:6px">
-            Koszt budynku: <b>${Number(d.building_cost||0).toLocaleString('pl-PL')} PLN / miesiąc</b>
+  box.innerHTML=dormitories.map(d=>{
+    const sections=dormSections.filter(s=>String(s.dorm_id)===String(d.id));
+    const rooms=dormRooms.filter(r=>String(r.dorm_id)===String(d.id));
+    const places=rooms.reduce((sum,r)=>sum+Number(r.capacity||0),0);
+    const activeRooms=rooms.filter(r=>r.active!==false).length;
+    const isOpen=String(openedDormitoryId)===String(d.id);
+
+    return `
+      <div class="info-card" style="margin-bottom:14px;border-radius:18px;padding:18px;border:1px solid #e5e7eb">
+        <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+              <div style="width:42px;height:42px;border-radius:14px;background:#eff6ff;display:flex;align-items:center;justify-content:center;font-size:22px">🏢</div>
+              <div>
+                <h3 style="margin:0;color:#111827">${d.name}</h3>
+                <div style="font-size:13px;color:#64748b">
+                  ${d.address||''}${d.postal_code?`, ${d.postal_code}`:''} ${d.city||''}
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+              <span class="badge ${d.active?'green':'red'}">${d.active?'Aktywny':'Nieaktywny'}</span>
+              <span class="badge blue">Mieszkania: ${sections.length}</span>
+              <span class="badge">Pokoje: ${activeRooms}</span>
+              <span class="badge">Miejsca: ${places}</span>
+              <span class="badge orange">Koszt: ${Number(d.building_cost||0).toLocaleString('pl-PL')} PLN</span>
+            </div>
           </div>
-          <div style="font-size:12px;margin-top:6px">
-            ${d.active?'<span class="badge green">Aktywny</span>':'<span class="badge red">Nieaktywny</span>'}
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+            <button class="btn btn-sm btn-primary" onclick="toggleDormitoryStructure(${d.id})">🏠 Struktura</button>
+            <button class="btn btn-sm btn-light" onclick="openEditDormitory(${d.id})">✏️ Edytuj</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteDormitory(${d.id})">🗑 Usuń</button>
           </div>
         </div>
 
+        ${isOpen?renderDormitoryStructure(d.id):''}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderDormitoryStructure(dormId){
+  const sections=dormSections
+    .filter(s=>String(s.dorm_id)===String(dormId))
+    .sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
+
+  return `
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid #e5e7eb">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h4 style="margin:0">🏠 Mieszkania / sekcje</h4>
+        <button class="btn btn-sm btn-primary" onclick="openAddSection(${dormId})">➕ Dodaj mieszkanie</button>
+      </div>
+
+      ${sections.length?sections.map(s=>renderSectionCard(s)).join(''):`<div class="empty">Brak mieszkań / sekcji</div>`}
+    </div>
+  `;
+}
+
+function renderSectionCard(section){
+  const rooms=dormRooms
+    .filter(r=>String(r.section_id)===String(section.id))
+    .sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+
+  const places=rooms.reduce((sum,r)=>sum+Number(r.capacity||0),0);
+
+  return `
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div>
+          <b>🏠 ${section.name}</b>
+          <span style="font-size:12px;color:#64748b;margin-left:8px">
+            Pokoje: ${rooms.length}, miejsca: ${places}
+          </span>
+        </div>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-sm btn-primary" onclick="openEditDormitory(${d.id})">✏️ Edytuj</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteDormitory(${d.id})">🗑 Usuń</button>
+          <button class="btn btn-sm btn-primary" onclick="openAddRoom(${section.dorm_id},${section.id})">➕ Pokój</button>
+          <button class="btn btn-sm btn-light" onclick="openEditSection(${section.id})">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteSection(${section.id})">🗑</button>
         </div>
       </div>
+
+      <div style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px">
+        ${rooms.length?rooms.map(r=>`
+          <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <b>🚪 ${r.name}</b>
+              <span class="badge">${r.capacity} os.</span>
+            </div>
+            <div style="font-size:12px;color:#64748b;margin-top:6px">
+              ${r.gender==='male'?'♂ Mężczyźni':r.gender==='female'?'♀ Kobiety':'Dowolna'}<br>
+              ${Number(r.price_per_person||0).toLocaleString('pl-PL')} PLN / os.
+            </div>
+            <div style="display:flex;gap:5px;margin-top:8px">
+              <button class="btn btn-sm btn-light" onclick="openEditRoom(${r.id})">✏️</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteRoom(${r.id})">🗑</button>
+            </div>
+          </div>
+        `).join(''):`<div class="empty">Brak pokoi</div>`}
+      </div>
     </div>
-  `).join('');
+  `;
+}
+
+function toggleDormitoryStructure(id){
+  openedDormitoryId=String(openedDormitoryId)===String(id)?null:id;
+  renderDormsAdmin();
 }
 
 function openAddDormitory(){
@@ -3351,15 +3519,134 @@ async function saveDormitory(){
 async function deleteDormitory(id){
   const d=dormitories.find(x=>String(x.id)===String(id));
   if(!d)return;
-
   if(!confirm(`Usunąć akademik: ${d.name}?`))return;
 
   const res=await fetch(`/api/dormitories/${id}`,{method:'DELETE'});
+  if(!res.ok){alert('Błąd usuwania akademika.');return;}
 
-  if(!res.ok){
-    alert('Błąd usuwania akademika.');
-    return;
-  }
+  await renderDormsAdmin();
+  await loadAll();
+}
+
+function openAddSection(dormId){
+  document.getElementById('section-id').value='';
+  document.getElementById('section-dorm-id').value=dormId;
+  document.getElementById('section-name').value='';
+  document.getElementById('section-order').value='0';
+  document.getElementById('modal-section').classList.add('open');
+}
+
+function openEditSection(id){
+  const s=dormSections.find(x=>String(x.id)===String(id));
+  if(!s)return;
+
+  document.getElementById('section-id').value=s.id;
+  document.getElementById('section-dorm-id').value=s.dorm_id;
+  document.getElementById('section-name').value=s.name||'';
+  document.getElementById('section-order').value=s.sort_order||0;
+  document.getElementById('modal-section').classList.add('open');
+}
+
+async function saveSection(){
+  const id=document.getElementById('section-id').value;
+
+  const payload={
+    dorm_id:Number(document.getElementById('section-dorm-id').value),
+    name:document.getElementById('section-name').value.trim(),
+    sort_order:Number(document.getElementById('section-order').value||0)
+  };
+
+  if(!payload.name){alert('Podaj nazwę mieszkania / sekcji.');return;}
+
+  const url=id?`/api/dorm-sections/${id}`:'/api/dorm-sections';
+  const method=id?'PUT':'POST';
+
+  const res=await fetch(url,{
+    method,
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+
+  if(!res.ok){alert('Błąd zapisu mieszkania.');return;}
+
+  closeModal('modal-section');
+  await renderDormsAdmin();
+  await loadAll();
+}
+
+async function deleteSection(id){
+  if(!confirm('Usunąć mieszkanie / sekcję razem z pokojami?'))return;
+
+  const res=await fetch(`/api/dorm-sections/${id}`,{method:'DELETE'});
+  if(!res.ok){alert('Błąd usuwania mieszkania.');return;}
+
+  await renderDormsAdmin();
+  await loadAll();
+}
+
+function openAddRoom(dormId,sectionId){
+  document.getElementById('room-id').value='';
+  document.getElementById('room-dorm-id').value=dormId;
+  document.getElementById('room-section-id').value=sectionId;
+  document.getElementById('room-name').value='';
+  document.getElementById('room-capacity').value='1';
+  document.getElementById('room-price').value='0';
+  document.getElementById('room-gender').value='any';
+  document.getElementById('room-active').value='true';
+  document.getElementById('modal-room').classList.add('open');
+}
+
+function openEditRoom(id){
+  const r=dormRooms.find(x=>String(x.id)===String(id));
+  if(!r)return;
+
+  document.getElementById('room-id').value=r.id;
+  document.getElementById('room-dorm-id').value=r.dorm_id;
+  document.getElementById('room-section-id').value=r.section_id;
+  document.getElementById('room-name').value=r.name||'';
+  document.getElementById('room-capacity').value=r.capacity||1;
+  document.getElementById('room-price').value=r.price_per_person||0;
+  document.getElementById('room-gender').value=r.gender||'any';
+  document.getElementById('room-active').value=String(r.active!==false);
+  document.getElementById('modal-room').classList.add('open');
+}
+
+async function saveRoom(){
+  const id=document.getElementById('room-id').value;
+
+  const payload={
+    dorm_id:Number(document.getElementById('room-dorm-id').value),
+    section_id:Number(document.getElementById('room-section-id').value),
+    name:document.getElementById('room-name').value.trim(),
+    capacity:Number(document.getElementById('room-capacity').value||1),
+    gender:document.getElementById('room-gender').value,
+    price_per_person:Number(document.getElementById('room-price').value||0),
+    active:document.getElementById('room-active').value==='true'
+  };
+
+  if(!payload.name){alert('Podaj nazwę pokoju.');return;}
+
+  const url=id?`/api/dorm-rooms/${id}`:'/api/dorm-rooms';
+  const method=id?'PUT':'POST';
+
+  const res=await fetch(url,{
+    method,
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+
+  if(!res.ok){alert('Błąd zapisu pokoju.');return;}
+
+  closeModal('modal-room');
+  await renderDormsAdmin();
+  await loadAll();
+}
+
+async function deleteRoom(id){
+  if(!confirm('Usunąć pokój?'))return;
+
+  const res=await fetch(`/api/dorm-rooms/${id}`,{method:'DELETE'});
+  if(!res.ok){alert('Błąd usuwania pokoju.');return;}
 
   await renderDormsAdmin();
   await loadAll();

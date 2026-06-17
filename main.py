@@ -780,6 +780,52 @@ async def remove_dormitory(dorm_id: int):
     db.delete_dormitory(dorm_id)
     return {"ok": True}
 
+
+
+@app.get("/api/dorm-sections")
+async def api_get_sections():
+    return db.get_all_sections()
+
+
+@app.post("/api/dorm-sections")
+async def api_add_section(data: dict):
+    return db.add_section(data)
+
+
+@app.put("/api/dorm-sections/{section_id}")
+async def api_update_section(section_id: int, data: dict):
+    db.update_section(section_id, data)
+    return {"ok": True}
+
+
+@app.delete("/api/dorm-sections/{section_id}")
+async def api_delete_section(section_id: int):
+    db.delete_section(section_id)
+    return {"ok": True}
+
+
+@app.get("/api/dorm-rooms")
+async def api_get_rooms():
+    return db.get_all_rooms()
+
+
+@app.post("/api/dorm-rooms")
+async def api_add_room(data: dict):
+    return db.add_room(data)
+
+
+@app.put("/api/dorm-rooms/{room_id}")
+async def api_update_room(room_id: int, data: dict):
+    db.update_room(room_id, data)
+    return {"ok": True}
+
+
+@app.delete("/api/dorm-rooms/{room_id}")
+async def api_delete_room(room_id: int):
+    db.delete_room(room_id)
+    return {"ok": True}
+
+
 # ── ГУРТОЖИТКИ ──
 @app.get("/api/dorms")
 async def get_dorms():

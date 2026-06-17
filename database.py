@@ -457,3 +457,15 @@ def update_room(room_id, data):
 def delete_room(room_id):
     supabase.table("dorm_rooms").delete().eq("id", room_id).execute()
 
+
+
+def get_all_sections():
+    result = supabase.table("dorm_sections").select("*").order("sort_order").execute()
+    return result.data or []
+
+
+def get_all_rooms():
+    result = supabase.table("dorm_rooms").select("*").order("id").execute()
+    return result.data or []
+
+
