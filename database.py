@@ -1,4 +1,6 @@
 import os
+import bcrypt
+import hmac
 from datetime import datetime
 from supabase import create_client
 
@@ -313,7 +315,7 @@ def add_user(data):
     result = supabase.table("users").insert({
         "name": data.get("name", ""),
         "email": data.get("email", ""),
-        "password_hash": data.get("password", ""),
+        "password_hash": hash_password(data.get("password", "")),
         "role": data.get("role", "pracownik"),
         "active": data.get("active", True)
     }).execute()
@@ -337,7 +339,7 @@ def update_user(user_id, fields):
         data["active"] = fields["active"]
 
     if "password" in fields and fields["password"]:
-        data["password_hash"] = fields["password"]
+        data["password_hash"] = hash_password(fields["password"])
 
     if not data:
         return
@@ -347,4 +349,32 @@ def update_user(user_id, fields):
 
 def delete_user(user_id):
     supabase.table("users").delete().eq("id", user_id).execute()
+
+
+def is_bcrypt_hash(value):
+    return isinstance(value, str) and (
+        value.startswith("$2a$") or
+        value.startswith("$2b$") or
+        value.startswith("$2y$")
+    )
+
+
+def hash_password(password):
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(password, stored):
+    if not stored:
+        return False
+
+    if is_bcrypt_hash(stored):
+        return bcrypt.checkpw(password.encode("utf-8"), stored.encode("utf-8"))
+
+    return hmac.compare_digest(password, stored)
+
+
+def set_user_password_hash(user_id, password_hash):
+    supabase.table("users").update({
+        "password_hash": password_hash
+    }).eq("id", user_id).execute()
 

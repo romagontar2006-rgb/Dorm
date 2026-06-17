@@ -373,8 +373,14 @@ async def login(data: LoginData):
     if not user.get("active"):
         raise HTTPException(status_code=403, detail="Konto zablokowane")
 
-    if user.get("password_hash") != data.password:
-        raise HTTPException(status_code=401, detail="Nieprawidłowe hasło")
+    stored_password = user.get("password_hash", "")
+
+if not db.verify_password(data.password, stored_password):
+    raise HTTPException(status_code=401, detail="Nieprawidłowe hasło")
+
+# якщо пароль ще старий типу 1999 — автоматично перетворюємо в bcrypt
+if not db.is_bcrypt_hash(stored_password):
+    db.set_user_password_hash(user["id"], db.hash_password(data.password))
 
     return {
         "id": user["id"],
