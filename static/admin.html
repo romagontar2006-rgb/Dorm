@@ -511,37 +511,47 @@ tr:hover td{background:#fafbff}
 
 
 <!-- MODAL DORMITORY -->
+<!-- MODAL DORMITORY -->
 <div class="modal" id="modal-dormitory">
-  <div class="modal-content" style="max-width:620px">
+  <div class="modal-content" style="max-width:680px">
     <h2>🏢 Akademik</h2>
 
     <input type="hidden" id="dormitory-id">
 
-    <label>NAZWA AKADEMIKA</label>
-    <input id="dormitory-name" placeholder="ul. Czarna Droga 41">
+    <div class="form-card">
+      <h3>📋 Dane akademika</h3>
 
-    <label>ADRES</label>
-    <input id="dormitory-address" placeholder="ul. Czarna Droga 41">
+      <label>NAZWA AKADEMIKA</label>
+      <input id="dormitory-name" placeholder="np. ul. Czarna Droga 41">
 
-    <div class="form-grid-2">
-      <div>
-        <label>KOD POCZTOWY</label>
-        <input id="dormitory-postal" placeholder="85-236">
+      <label>ADRES</label>
+      <input id="dormitory-address" placeholder="np. ul. Czarna Droga 41">
+
+      <div class="form-grid-2">
+        <div>
+          <label>KOD POCZTOWY</label>
+          <input id="dormitory-postal" placeholder="85-236">
+        </div>
+        <div>
+          <label>MIASTO</label>
+          <input id="dormitory-city" placeholder="Bydgoszcz" value="Bydgoszcz">
+        </div>
       </div>
-      <div>
-        <label>MIASTO</label>
-        <input id="dormitory-city" placeholder="Bydgoszcz" value="Bydgoszcz">
+
+      <div class="form-grid-2">
+        <div>
+          <label>KOSZT BUDYNKU / MIESIĄC</label>
+          <input id="dormitory-cost" type="number" placeholder="61000">
+        </div>
+        <div>
+          <label>STATUS</label>
+          <select id="dormitory-active">
+            <option value="true">Aktywny</option>
+            <option value="false">Nieaktywny</option>
+          </select>
+        </div>
       </div>
     </div>
-
-    <label>KOSZT BUDYNKU / MIESIĄC</label>
-    <input id="dormitory-cost" type="number" placeholder="61000">
-
-    <label>STATUS</label>
-    <select id="dormitory-active">
-      <option value="true">Aktywny</option>
-      <option value="false">Nieaktywny</option>
-    </select>
 
     <div class="modal-footer">
       <button class="btn btn-light" onclick="closeModal('modal-dormitory')">Anuluj</button>
@@ -554,17 +564,21 @@ tr:hover td{background:#fafbff}
 
 <!-- MODAL SECTION -->
 <div class="modal" id="modal-section">
-  <div class="modal-content" style="max-width:520px">
-    <h2>🏠 Mieszkanie / sekcja</h2>
+  <div class="modal-content" style="max-width:560px">
+    <h2>🏠 Mieszkanie</h2>
 
     <input type="hidden" id="section-id">
     <input type="hidden" id="section-dorm-id">
 
-    <label>NAZWA MIESZKANIA / SEKCJI</label>
-    <input id="section-name" placeholder="np. M2, M3, 1, 5">
+    <div class="form-card">
+      <h3>📋 Dane mieszkania</h3>
 
-    <label>KOLEJNOŚĆ</label>
-    <input id="section-order" type="number" value="0">
+      <label>NAZWA MIESZKANIA</label>
+      <input id="section-name" placeholder="np. M2, M3, 1, 5">
+
+      <label>KOLEJNOŚĆ WYŚWIETLANIA</label>
+      <input id="section-order" type="number" value="0">
+    </div>
 
     <div class="modal-footer">
       <button class="btn btn-light" onclick="closeModal('modal-section')">Anuluj</button>
