@@ -1543,7 +1543,8 @@ function showPage(id,btn){
 }
 
 
-function renderNotifications(){
+async function renderNotifications(){
+  await loadTemplates();
   const dormSel=document.getElementById('notif-dorm');
   if(!dormSel)return;
 
@@ -1568,6 +1569,7 @@ function renderNotifications(){
       </div>
     `).join('')}
   `;
+  fillTemplateSelect();
 
   const tpl=document.getElementById('notif-template')?.value;
   const box=document.getElementById('custom-message-box');
