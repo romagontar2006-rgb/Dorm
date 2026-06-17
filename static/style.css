@@ -26,3 +26,77 @@
   line-height:16px;
 }
 .cal-cell.today .cal-day-num{color:#1a3c5e;font-weight:800}
+
+
+.drawer-card{
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100vh;
+  max-width: 520px !important;
+  width: 520px;
+  border-radius: 22px 0 0 22px !important;
+  padding: 0 !important;
+  animation: slideDrawer .25s ease;
+  overflow-y: auto;
+}
+
+@keyframes slideDrawer{
+  from{transform:translateX(100%);opacity:.4}
+  to{transform:translateX(0);opacity:1}
+}
+
+.drawer-header{
+  padding:22px 24px;
+  border-bottom:1px solid #e5e7eb;
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:flex-start;
+}
+
+.drawer-header h2{
+  margin:0;
+  color:var(--primary);
+}
+
+.drawer-header p{
+  margin:4px 0 0;
+  color:#64748b;
+  font-size:13px;
+}
+
+.drawer-close{
+  border:none;
+  background:#f1f5f9;
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  font-size:22px;
+  cursor:pointer;
+}
+
+.form-section{
+  margin:18px 24px;
+  padding:18px;
+  background:#f8fafc;
+  border:1px solid #e5e7eb;
+  border-radius:16px;
+}
+
+.form-section h3{
+  margin:0 0 14px;
+  font-size:15px;
+  color:var(--primary);
+}
+
+.drawer-footer{
+  position:sticky;
+  bottom:0;
+  background:white;
+  border-top:1px solid #e5e7eb;
+  padding:16px 24px;
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+}

@@ -468,45 +468,65 @@ tr:hover td{background:#fafbff}
   </div>
 </div>
 
-<!-- MODAL ROOM -->
+<!-- DRAWER ROOM -->
 <div class="modal" id="modal-room">
-  <div class="modal-content" style="max-width:620px">
-    <h2>🚪 Pokój</h2>
+  <div class="modal-content drawer-card">
+    <div class="drawer-header">
+      <div>
+        <h2>🚪 Pokój</h2>
+        <p>Dodaj lub edytuj pokój w wybranym mieszkaniu</p>
+      </div>
+      <button class="drawer-close" onclick="closeModal('modal-room')">×</button>
+    </div>
 
     <input type="hidden" id="room-id">
     <input type="hidden" id="room-dorm-id">
     <input type="hidden" id="room-section-id">
 
-    <label>NAZWA POKOJU</label>
-    <input id="room-name" placeholder="np. 1A, 6M2/A1">
+    <div class="form-section">
+      <h3>Podstawowe informacje</h3>
 
-    <div class="form-grid-2">
-      <div>
-        <label>LICZBA MIEJSC</label>
-        <input id="room-capacity" type="number" value="1">
-      </div>
-      <div>
-        <label>CENA ZA OSOBĘ</label>
-        <input id="room-price" type="number" value="0">
+      <label>NAZWA POKOJU</label>
+      <input id="room-name" placeholder="np. 1A, 6M2/A1">
+
+      <div class="form-grid-2">
+        <div>
+          <label>LICZBA MIEJSC</label>
+          <input id="room-capacity" type="number" value="1">
+        </div>
+        <div>
+          <label>CENA ZA OSOBĘ</label>
+          <input id="room-price" type="number" value="0">
+        </div>
       </div>
     </div>
 
-    <label>PŁEĆ</label>
-    <select id="room-gender">
-      <option value="any">Dowolna</option>
-      <option value="male">Mężczyźni</option>
-      <option value="female">Kobiety</option>
-    </select>
+    <div class="form-section">
+      <h3>Ustawienia pokoju</h3>
 
-    <label>STATUS</label>
-    <select id="room-active">
-      <option value="true">Aktywny</option>
-      <option value="false">Nieaktywny</option>
-    </select>
+      <div class="form-grid-2">
+        <div>
+          <label>PŁEĆ</label>
+          <select id="room-gender">
+            <option value="any">Dowolna</option>
+            <option value="male">Mężczyźni</option>
+            <option value="female">Kobiety</option>
+          </select>
+        </div>
 
-    <div class="modal-footer">
+        <div>
+          <label>STATUS</label>
+          <select id="room-active">
+            <option value="true">Aktywny</option>
+            <option value="false">Nieaktywny</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-footer">
       <button class="btn btn-light" onclick="closeModal('modal-room')">Anuluj</button>
-      <button class="btn btn-primary" onclick="saveRoom()">✓ Zapisz</button>
+      <button class="btn btn-primary" onclick="saveRoom()">✓ Zapisz pokój</button>
     </div>
   </div>
 </div>
