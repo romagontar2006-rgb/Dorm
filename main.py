@@ -364,7 +364,6 @@ class LoginData(BaseModel):
 
 @app.post("/api/login")
 async def login(data: LoginData):
-
     user = db.get_user_by_email(data.email)
 
     if not user:
@@ -375,12 +374,11 @@ async def login(data: LoginData):
 
     stored_password = user.get("password_hash", "")
 
-if not db.verify_password(data.password, stored_password):
-    raise HTTPException(status_code=401, detail="Nieprawidłowe hasło")
+    if not db.verify_password(data.password, stored_password):
+        raise HTTPException(status_code=401, detail="Nieprawidłowe hasło")
 
-# якщо пароль ще старий типу 1999 — автоматично перетворюємо в bcrypt
-if not db.is_bcrypt_hash(stored_password):
-    db.set_user_password_hash(user["id"], db.hash_password(data.password))
+    if not db.is_bcrypt_hash(stored_password):
+        db.set_user_password_hash(user["id"], db.hash_password(data.password))
 
     return {
         "id": user["id"],
@@ -388,7 +386,6 @@ if not db.is_bcrypt_hash(stored_password):
         "email": user["email"],
         "role": user["role"]
     }
-
 
 def check_admin(password: str):
     if password != ADMIN_PASSWORD:
