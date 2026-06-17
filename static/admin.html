@@ -835,6 +835,17 @@ tr:hover td{background:#fafbff}
   </div>
 
 
+<div class="form-card">
+  <h3>📨 Szablon wiadomości</h3>
+
+  <label>WYBIERZ SZABLON</label>
+  <select id="notification-template"
+          onchange="applyTemplateToNotification()">
+    <option value="">Wybierz szablon...</option>
+  </select>
+</div>
+
+
   <div id="custom-message-box" style="display:none;margin-top:15px">
 
   <div class="form-group">
@@ -1617,6 +1628,30 @@ async function renderNotifications(){
     }
   }
 }
+
+
+
+function applyTemplateToNotification(){
+
+  const id=document.getElementById('notification-template').value;
+
+  if(!id) return;
+
+  const template=
+    templates.find(t=>String(t.id)===String(id));
+
+  if(!template) return;
+
+  document.getElementById('custom-message-box').style.display='block';
+
+  document.getElementById('custom-subject').value =
+    template.subject || '';
+
+  document.getElementById('custom-body').value =
+    template.body || '';
+}
+
+
 
 function selectNotificationPerson(id){
   selectedNotificationPersonId=id;
