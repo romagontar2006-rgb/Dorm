@@ -1554,6 +1554,26 @@ function showPage(id,btn){
 }
 
 
+
+function fillTemplateSelect(){
+  const select=document.getElementById('notification-template');
+  if(!select)return;
+
+  select.innerHTML='<option value="">Wybierz szablon...</option>';
+
+  templates.forEach(t=>{
+    if(t.active===false)return;
+
+    select.innerHTML+=`
+      <option value="${t.id}">
+        ${t.name}
+      </option>
+    `;
+  });
+}
+
+
+
 async function renderNotifications(){
   await loadTemplates();
   const dormSel=document.getElementById('notif-dorm');
