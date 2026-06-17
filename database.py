@@ -378,3 +378,82 @@ def set_user_password_hash(user_id, password_hash):
         "password_hash": password_hash
     }).eq("id", user_id).execute()
 
+
+
+# ────────────────────────────────────────────
+# DORMITORIES
+# ────────────────────────────────────────────
+
+def get_dormitories():
+    result = supabase.table("dormitories").select("*").order("id").execute()
+    return result.data or []
+
+
+def add_dormitory(data):
+    result = supabase.table("dormitories").insert(data).execute()
+    return result.data[0]
+
+
+def update_dormitory(dorm_id, data):
+    supabase.table("dormitories").update(data).eq("id", dorm_id).execute()
+
+
+def delete_dormitory(dorm_id):
+    supabase.table("dormitories").delete().eq("id", dorm_id).execute()
+
+
+# ────────────────────────────────────────────
+# SECTIONS
+# ────────────────────────────────────────────
+
+def get_sections(dorm_id):
+    result = (
+        supabase.table("dorm_sections")
+        .select("*")
+        .eq("dorm_id", dorm_id)
+        .order("sort_order")
+        .execute()
+    )
+    return result.data or []
+
+
+def add_section(data):
+    result = supabase.table("dorm_sections").insert(data).execute()
+    return result.data[0]
+
+
+def update_section(section_id, data):
+    supabase.table("dorm_sections").update(data).eq("id", section_id).execute()
+
+
+def delete_section(section_id):
+    supabase.table("dorm_sections").delete().eq("id", section_id).execute()
+
+
+# ────────────────────────────────────────────
+# ROOMS
+# ────────────────────────────────────────────
+
+def get_rooms(dorm_id):
+    result = (
+        supabase.table("dorm_rooms")
+        .select("*")
+        .eq("dorm_id", dorm_id)
+        .order("id")
+        .execute()
+    )
+    return result.data or []
+
+
+def add_room(data):
+    result = supabase.table("dorm_rooms").insert(data).execute()
+    return result.data[0]
+
+
+def update_room(room_id, data):
+    supabase.table("dorm_rooms").update(data).eq("id", room_id).execute()
+
+
+def delete_room(room_id):
+    supabase.table("dorm_rooms").delete().eq("id", room_id).execute()
+

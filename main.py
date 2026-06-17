@@ -758,6 +758,28 @@ async def upload_photo(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, f)
     return {"url": f"/uploads/{filename}"}
 
+
+@app.get("/api/dormitories")
+async def get_dormitories():
+    return db.get_dormitories()
+
+
+@app.post("/api/dormitories")
+async def create_dormitory(data: dict):
+    return db.add_dormitory(data)
+
+
+@app.put("/api/dormitories/{dorm_id}")
+async def edit_dormitory(dorm_id: int, data: dict):
+    db.update_dormitory(dorm_id, data)
+    return {"ok": True}
+
+
+@app.delete("/api/dormitories/{dorm_id}")
+async def remove_dormitory(dorm_id: int):
+    db.delete_dormitory(dorm_id)
+    return {"ok": True}
+
 # ── ГУРТОЖИТКИ ──
 @app.get("/api/dorms")
 async def get_dorms():
