@@ -1744,7 +1744,7 @@ function getNotificationRecipients(){
 }
 
 
-function buildTemplate(template, resident){
+function buildTemplate(template, resident, extraVars = {}){
   let body = template.body || '';
   let subject = template.subject || '';
 
@@ -1752,16 +1752,23 @@ function buildTemplate(template, resident){
   const firstName = parts[0] || '';
   const lastName = parts.slice(1).join(' ') || '';
 
+  const isFemale = resident.gender === 'female';
+
   const vars = {
-    title: resident.gender === 'female' ? 'Pani' : 'Pan',
-    gender_title: resident.gender === 'female' ? 'Pani' : 'Pan',
+    formal_greeting: isFemale ? 'Szanowna Pani' : 'Szanowny Panie',
+    title: isFemale ? 'Pani' : 'Pan',
+    gender_title: isFemale ? 'Pani' : 'Pan',
+
     first_name: firstName,
     last_name: lastName,
     full_name: resident.full_name || '',
+
     dorm: getDormName(resident.dorm_id),
     room: resident.room || '',
     contract_end: resident.contract_end || '',
-    email: getResidentEmails(resident)[0] || ''
+    email: getResidentEmails(resident)[0] || '',
+
+    amount: extraVars.amount || ''
   };
 
   Object.entries(vars).forEach(([k,v])=>{
@@ -1796,7 +1803,12 @@ function generateNotifications(){
   }
 
   out.innerHTML = people.map(r=>{
-    const msg = buildTemplate(template, r);
+    let amount = '';
+
+if((template.body || '').includes('{amount}') || (template.subject || '').includes('{amount}')){
+  amount = prompt('Podaj kwotę do wiadomości:', '850') || '';
+}
+    const msg = buildTemplate(template, r, {amount});
     const emails = getResidentEmails(r).join(',');
     const mailto = `mailto:${emails}?subject=${encodeURIComponent(msg.subject)}&body=${encodeURIComponent(msg.body)}`;
 
