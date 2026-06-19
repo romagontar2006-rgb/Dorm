@@ -819,7 +819,7 @@ tr:hover td{background:#fafbff}
     <div id="notif-recipients" style="margin-top:10px"></div>
   </div>
 
-  <div class="info-card">
+  <div class="info-card" style="display:none">
     <h4>2. Wybierz szablon</h4>
 
     <div class="form-group">
@@ -843,6 +843,12 @@ tr:hover td{background:#fafbff}
           onchange="applyTemplateToNotification()">
     <option value="">Wybierz szablon...</option>
   </select>
+
+  <button class="btn btn-primary"
+          onclick="generateNotifications()"
+          style="margin-top:12px">
+    📧 Generuj wiadomości
+  </button>
 </div>
 
 
