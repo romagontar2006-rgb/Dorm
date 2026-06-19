@@ -820,29 +820,22 @@ tr:hover td{background:#fafbff}
   </div>
 
   <div class="info-card">
-    <h4>2. Wybierz szablon</h4>
-
-    <div class="form-group">
-      <label>Szablon wiadomości</label>
-      <select id="notif-template" onchange="renderNotifications()">
-  <option value="payment_reminder">Payment Reminder / Przypomnienie o płatności</option>
-  <option value="payment_demand">WEZWANIE DO NATYCHMIASTOWEJ ZAPŁATY</option>
-  <option value="custom">Informacja własna</option>
-</select>
-    </div>
-
-    <button class="btn btn-primary" onclick="generateNotifications()">📧 Generuj wiadomości</button>
-  </div>
+   
 
 
 <div class="form-card">
-  <h3>📨 Szablon wiadomości</h3>
+  <h3>2.📨 Szablon wiadomości</h3>
 
   <label>WYBIERZ SZABLON</label>
   <select id="notification-template"
           onchange="applyTemplateToNotification()">
+          
     <option value="">Wybierz szablon...</option>
   </select>
+
+<button class="btn btn-primary" onclick="generateNotifications()" style="margin-top:12px">
+  📧 Generuj wiadomości
+</button>
 </div>
 
 
