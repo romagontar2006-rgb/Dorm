@@ -641,6 +641,38 @@ tr:hover td{background:#fafbff}
 
 
 
+<div class="modal" id="modal-template-help">
+  <div class="modal-content" style="max-width:760px">
+    <h2>❔ Zmienne w szablonach</h2>
+
+    <div class="form-card">
+      <h3>Jak działają zmienne?</h3>
+      <p style="font-size:13px;color:#64748b;line-height:1.6">
+        Wpisz zmienną w treści szablonu, a system automatycznie podstawi dane mieszkańca.
+      </p>
+
+      <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:14px;font-size:13px">
+        <b>{formal_greeting}</b><span>Szanowny Panie / Szanowna Pani</span>
+        <b>{title}</b><span>Pan / Pani</span>
+        <b>{first_name}</b><span>Imię mieszkańca</span>
+        <b>{last_name}</b><span>Nazwisko mieszkańca</span>
+        <b>{full_name}</b><span>Pełne imię i nazwisko</span>
+        <b>{dorm}</b><span>Nazwa akademika</span>
+        <b>{room}</b><span>Numer pokoju</span>
+        <b>{contract_end}</b><span>Data zakończenia umowy</span>
+        <b>{email}</b><span>Email mieszkańca</span>
+        <b>{amount}</b><span>Kwota wpisywana podczas generowania wiadomości</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('modal-template-help')">Rozumiem</button>
+    </div>
+  </div>
+</div>
+
+
+
 <div class="modal" id="modal-template-preview">
   <div class="modal-content" style="max-width:900px">
 
@@ -878,6 +910,10 @@ tr:hover td{background:#fafbff}
   <div class="section-title">
     📨 Szablony wiadomości
   </div>
+
+  <button class="btn btn-light" onclick="openTemplateHelp()">
+    ❔ Zmienne
+  </button>
 
   <button class="btn btn-primary"
           onclick="openAddTemplate()"
@@ -3326,6 +3362,13 @@ document.getElementById('m-phone').value=r.phone||'';
 }
 
 function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+
+
+function openTemplateHelp(){
+  document.getElementById('modal-template-help').classList.add('open');
+}
+
 
 // ФОТО
 function dragOver(e){e.preventDefault();document.getElementById('photo-upload-area').classList.add('dragging');}
