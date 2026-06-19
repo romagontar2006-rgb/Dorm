@@ -1849,42 +1849,39 @@ function getDormName(dormId){
 
 
 
-function buildTemplate(template,resident){
-
+function buildTemplate(template, resident, extraVars = {}){
   let body = template.body || '';
   let subject = template.subject || '';
 
+  const parts = (resident.full_name || '').trim().split(' ');
+  const firstName = parts[0] || '';
+  const lastName = parts.slice(1).join(' ') || '';
+
+  const isFemale = resident.gender === 'female';
+
   const vars = {
-    gender_title:
-      resident.gender === 'female'
-        ? 'Pani'
-        : 'Pan',
+    formal_greeting: isFemale ? 'Szanowna Pani' : 'Szanowny Panie',
+    title: isFemale ? 'Pani' : 'Pan',
+    gender_title: isFemale ? 'Pani' : 'Pan',
 
-    first_name:
-      resident.full_name?.split(' ')[0] || '',
+    first_name: firstName,
+    last_name: lastName,
+    full_name: resident.full_name || '',
 
-    last_name:
-      resident.full_name?.split(' ').slice(1).join(' ') || '',
+    dorm: getDormName(resident.dorm_id),
+    room: resident.room || '',
+    contract_end: resident.contract_end || '',
+    email: getResidentEmails(resident)[0] || '',
 
-    full_name:
-      resident.full_name || '',
-
-    dorm:
-      getDormName(resident.dorm_id),
-
-    room:
-      resident.room || '',
-
-    email:
-      getResidentEmails(resident)[0] || ''
+    amount: extraVars.amount || ''
   };
 
   Object.entries(vars).forEach(([k,v])=>{
-    body = body.replaceAll(`{${k}}`,v);
-    subject = subject.replaceAll(`{${k}}`,v);
+    subject = subject.replaceAll(`{${k}}`, v);
+    body = body.replaceAll(`{${k}}`, v);
   });
 
-  return {subject,body};
+  return {subject, body};
 }
 
 function copyText(text){
