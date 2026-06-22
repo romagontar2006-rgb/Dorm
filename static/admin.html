@@ -1281,6 +1281,32 @@ tr:hover td{background:#fafbff}
       </div>
     </div>
 
+
+
+    <div style="background:#f7f9fc;border-radius:10px;padding:14px;margin-bottom:14px;border-left:4px solid var(--orange)">
+  <div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:10px;text-transform:uppercase">
+    💰 Kaucja
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label>Kwota kaucji</label>
+      <input type="number" id="m-deposit" value="850">
+    </div>
+
+    <div class="form-group">
+      <label>Status kaucji</label>
+      <select id="m-deposit-status">
+        <option value="paid">Wpłacona</option>
+        <option value="not_paid">Brak wpłaty</option>
+        <option value="partial">Częściowo</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+
+
     <div class="form-group">
       <label>Zdjęcie (opcjonalnie)</label>
       <div class="photo-upload-area" id="photo-upload-area" onclick="document.getElementById('photo-file').click()" ondragover="dragOver(event)" ondrop="dropFile(event)">
@@ -1310,6 +1336,69 @@ tr:hover td{background:#fafbff}
 </div>
   </div>
 </div>
+
+
+
+<!-- MODAL EVICTION -->
+<div class="modal" id="modal-eviction">
+  <div class="modal-content" style="max-width:720px">
+    <h2>🚪 Proces wysiedlenia</h2>
+
+    <input type="hidden" id="evict-resident-id">
+
+    <div class="form-card">
+      <h3>👤 Mieszkaniec</h3>
+      <p id="evict-resident-info" style="font-size:13px;color:#64748b;line-height:1.6"></p>
+    </div>
+
+    <div class="form-card">
+      <h3>💰 Kaucja i potrącenia</h3>
+
+      <div class="form-grid-2">
+        <div>
+          <label>DATA WYPROWADZKI</label>
+          <input id="evict-checkout" type="date">
+        </div>
+        <div>
+          <label>KAUCJA</label>
+          <input id="evict-deposit" type="number" value="850">
+        </div>
+      </div>
+
+      <div class="form-grid-2">
+        <div>
+          <label>POTRĄCENIA</label>
+          <input id="evict-deductions" type="number" value="0">
+        </div>
+        <div>
+          <label>DO ZWROTU</label>
+          <input id="evict-refund" type="number" readonly>
+        </div>
+      </div>
+
+      <label>POWÓD POTRĄCENIA / UWAGI</label>
+      <textarea id="evict-deduction-reason" rows="3" placeholder="np. dezynfekcja pokoju, uszkodzony klucz..."></textarea>
+    </div>
+
+    <div class="form-card">
+      <h3>🏦 Dane do zwrotu</h3>
+
+      <label>NUMER KONTA BANKOWEGO</label>
+      <input id="evict-bank-account" placeholder="PL...">
+
+      <label>WŁAŚCICIEL KONTA</label>
+      <input id="evict-bank-owner" placeholder="Imię i nazwisko">
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('modal-eviction')">Anuluj</button>
+      <button class="btn btn-light" onclick="generateEvictionFinanceEmail()">📨 Email do finansów</button>
+      <button class="btn btn-danger" onclick="confirmEvictionProcess()">🚪 Przenieś do historii</button>
+    </div>
+  </div>
+</div>
+
+
 
 <!-- МОДАЛКА: КОМЕНТАР -->
 <div class="modal" id="modal-comment">
@@ -3341,6 +3430,8 @@ document.getElementById('m-phone').value=r.phone||'';
   document.getElementById('m-contract-date').value=r.contract_date||'';
   document.getElementById('m-contract-end').value=r.contract_end||'';
   document.getElementById('m-contract-num').value=r.contract_num||'';
+  document.getElementById('m-deposit').value = r.deposit || 850;
+document.getElementById('m-deposit-status').value = r.deposit_status || 'paid';
   document.getElementById('m-notes').value=r.notes||'';
   document.getElementById('m-dorm').value=r.dorm_id;
   updateFloors();
@@ -3500,10 +3591,29 @@ const phone=document.getElementById('m-phone').value;
     const d=await r.json();photoUrl=d.url||'';
   }
 
-  const payload={full_name:name,dorm_id:parseInt(dormId),floor,room,gender,email,email2,email3,phone,
-    telegram,checkin,checkout,contract_date:contractDate,contract_end:contractEnd,
-    contract_num:contractNum,notes,
-    ...(photoUrl?{photo_url:photoUrl}:{})};
+  const payload={
+  full_name:name,
+  dorm_id:parseInt(dormId),
+  floor,
+  room,
+  gender,
+  email,
+  email2,
+  email3,
+  phone,
+  telegram,
+  checkin,
+  checkout,
+  contract_date:contractDate,
+  contract_end:contractEnd,
+  contract_num:contractNum,
+  notes,
+
+  deposit:Number(document.getElementById('m-deposit').value || 0),
+  deposit_status:document.getElementById('m-deposit-status').value,
+
+  ...(photoUrl?{photo_url:photoUrl}:{})
+};
 
   if(editId){
     // Редагування
@@ -3533,14 +3643,85 @@ if(fromRes){
 }
 
 
-async function evictResident(id){
-  if(!confirm('Wymeldować mieszkańca?'))return;
+function openEvictionModal(id){
+  const r=residents.find(x=>String(x.id)===String(id));
+  if(!r)return;
+
   const today=new Date().toISOString().split('T')[0];
-  await fetch(`/api/residents/${id}?password=${pwd}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'evicted',checkout:today})});
+
+  document.getElementById('evict-resident-id').value=r.id;
+  document.getElementById('evict-checkout').value=today;
+  document.getElementById('evict-deposit').value=r.deposit || r.kaucja || 850;
+  document.getElementById('evict-deductions').value=0;
+  document.getElementById('evict-deduction-reason').value='';
+  document.getElementById('evict-bank-account').value='';
+  document.getElementById('evict-bank-owner').value=r.full_name || '';
+  document.getElementById('evict-refund').value=document.getElementById('evict-deposit').value;
+
+  document.getElementById('evict-resident-info').innerHTML=`
+    <b>${r.full_name||''}</b><br>
+    Akademik: ${getDormName(r.dorm_id)}<br>
+    Mieszkanie / sekcja: ${r.floor||''}<br>
+    Pokój: ${r.room||''}<br>
+    Email: ${getResidentEmails(r).join(', ')||'brak'}
+  `;
+
+  closeModal('modal-resident');
+  document.getElementById('modal-eviction').classList.add('open');
+}
+
+function updateEvictionRefund(){
+  const deposit=Number(document.getElementById('evict-deposit').value||0);
+  const deductions=Number(document.getElementById('evict-deductions').value||0);
+  document.getElementById('evict-refund').value=Math.max(0,deposit-deductions);
+}
+
+['evict-deposit','evict-deductions'].forEach(id=>{
+  setTimeout(()=>{
+    const el=document.getElementById(id);
+    if(el)el.addEventListener('input',updateEvictionRefund);
+  },500);
+});
+
+async function confirmEvictionProcess(){
+  const id=document.getElementById('evict-resident-id').value;
+  if(!id)return;
+
+  if(!confirm('Na pewno przenieść mieszkańca do historii?'))return;
+
+  const checkout=document.getElementById('evict-checkout').value || new Date().toISOString().split('T')[0];
+
+  const notes=[
+    'KAUCJA:',
+    `Kaucja: ${document.getElementById('evict-deposit').value} PLN`,
+    `Potrącenia: ${document.getElementById('evict-deductions').value} PLN`,
+    `Do zwrotu: ${document.getElementById('evict-refund').value} PLN`,
+    `Powód potrącenia: ${document.getElementById('evict-deduction-reason').value}`,
+    `Konto: ${document.getElementById('evict-bank-account').value}`,
+    `Właściciel konta: ${document.getElementById('evict-bank-owner').value}`
+  ].join('\n');
+
+  await fetch(`/api/residents/${id}?password=${pwd}`,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      status:'evicted',
+      checkout,
+      eviction_notes:notes
+    })
+  });
+
   residents=await fetch(`/api/residents?password=${pwd}`).then(r=>r.json());
   dorms=await fetch('/api/dorms').then(r=>r.json());
   history=await fetch(`/api/history?password=${pwd}`).then(r=>r.json());
-  renderResidents();renderDashboard();
+
+  closeModal('modal-eviction');
+  renderResidents();
+  renderDashboard();
+}
+
+function evictResident(id){
+  openEvictionModal(id);
 }
 
 // ── ЗАЯВКИ ──
