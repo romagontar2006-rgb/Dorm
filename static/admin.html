@@ -119,6 +119,43 @@ tr:hover td{background:#fafbff}
 .modal-box h3{font-size:17px;color:var(--blue);margin-bottom:20px;font-weight:700}
 .modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
 
+
+.deposit-status{
+  display:inline-block;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  border:none;
+}
+
+.deposit-status.do_sprawdzenia{
+  background:#fee2e2;
+  color:#dc2626;
+}
+
+.deposit-status.pokoj_sprawdzony{
+  background:#fef3c7;
+  color:#b45309;
+}
+
+.deposit-status.dane_bankowe{
+  background:#dbeafe;
+  color:#1d4ed8;
+}
+
+.deposit-status.przekazane{
+  background:#ede9fe;
+  color:#6d28d9;
+}
+
+.deposit-status.wyplacone{
+  background:#dcfce7;
+  color:#15803d;
+}
+
+
+
 /* FILTER BAR */
 .filter-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
 .filter-bar input,.filter-bar select{padding:9px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;outline:none;background:white;min-width:180px}
@@ -5158,7 +5195,13 @@ async function renderDeposits(){
                 <td>${d.deductions||0} PLN</td>
                 <td><b>${refund} PLN</b></td>
                 <td>
-                  <select onchange="updateDepositStatus(${d.id}, this.value)">
+  <span class="deposit-status ${d.status}">
+    ${depositStatusLabel(d.status)}
+  </span>
+</td>
+<button onclick="nextDepositStatus(${d.id})">
+  ➡️
+</button>
                     <option value="do_sprawdzenia" ${d.status==='do_sprawdzenia'?'selected':''}>Do sprawdzenia</option>
                     <option value="pokoj_sprawdzony" ${d.status==='pokoj_sprawdzony'?'selected':''}>Pokój sprawdzony</option>
                     <option value="dane_bankowe" ${d.status==='dane_bankowe'?'selected':''}>Dane bankowe otrzymane</option>
