@@ -5117,10 +5117,7 @@ async function loadDeposits(){
 
 async function renderDeposits(){
   const box=document.getElementById('deposits-list');
-  if(!box){
-    alert('Nie znaleziono deposits-list');
-    return;
-  }
+  if(!box)return;
 
   await loadDeposits();
 
@@ -5129,26 +5126,95 @@ async function renderDeposits(){
     return;
   }
 
-  box.innerHTML=deposits.map(d=>`
-    <div class="info-card">
-      <h4>💰 ${d.full_name||'Brak danych'}</h4>
-      <p>${d.dorm||''} / ${d.floor||''} / pokój ${d.room||''}</p>
-      <p>Kaucja: ${d.deposit||0} PLN | Do zwrotu: ${d.refund||0} PLN</p>
-      <p>Status: ${depositStatusLabel(d.status)}</p>
+  box.innerHTML=`
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Imię i nazwisko</th>
+            <th>Akademik</th>
+            <th>Pokój</th>
+            <th>Kaucja</th>
+            <th>Potrącenia</th>
+            <th>Do zwrotu</th>
+            <th>Status</th>
+            <th>Akcje</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${deposits.map((d,i)=>{
+            const refund=Number(d.refund ?? (Number(d.deposit||0)-Number(d.deductions||0)));
+
+            return `
+              <tr>
+                <td>#${i+1}</td>
+                <td><b>${d.full_name||'Brak danych'}</b><br>
+                  <span style="font-size:11px;color:#777">Wymeldowanie: ${d.checkout||'—'}</span>
+                </td>
+                <td>${d.dorm||'—'}</td>
+                <td>${d.room||'—'}</td>
+                <td>${d.deposit||0} PLN</td>
+                <td>${d.deductions||0} PLN</td>
+                <td><b>${refund} PLN</b></td>
+                <td>
+                  <select onchange="updateDepositStatus(${d.id}, this.value)">
+                    <option value="do_sprawdzenia" ${d.status==='do_sprawdzenia'?'selected':''}>Do sprawdzenia</option>
+                    <option value="pokoj_sprawdzony" ${d.status==='pokoj_sprawdzony'?'selected':''}>Pokój sprawdzony</option>
+                    <option value="dane_bankowe" ${d.status==='dane_bankowe'?'selected':''}>Dane bankowe otrzymane</option>
+                    <option value="przekazane" ${d.status==='przekazane'?'selected':''}>Przekazane do finansów</option>
+                    <option value="wyplacone" ${d.status==='wyplacone'?'selected':''}>Wypłacone</option>
+                  </select>
+                </td>
+                <td>
+                  <div class="btn-group">
+                    <button class="btn btn-light btn-sm" onclick="openDepositCase(${d.id})">✏️</button>
+                    <button class="btn btn-success btn-sm" onclick="markDepositPaid(${d.id})">✅</button>
+                    <button class="btn btn-primary btn-sm" onclick="generateDepositFinanceEmail(${d.id})">📨</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
     </div>
-  `).join('');
+  `;
 }
 
-function depositStatusLabel(status){
-  const labels={
-    do_sprawdzenia:'Do sprawdzenia',
-    pokoj_sprawdzony:'Pokój sprawdzony',
-    dane_bankowe:'Dane bankowe otrzymane',
-    przekazane:'Przekazane do finansów',
-    wyplacone:'Wypłacone'
-  };
 
-  return labels[status] || 'Do sprawdzenia';
+async function updateDepositStatus(id,status){
+  await fetch(`/api/deposits/${id}?password=${pwd}`,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({status})
+  });
+
+  await renderDeposits();
+}
+
+async function markDepositPaid(id){
+  const today=new Date().toISOString().split('T')[0];
+
+  await fetch(`/api/deposits/${id}?password=${pwd}`,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      status:'wyplacone',
+      paid:true,
+      payout_date:today
+    })
+  });
+
+  await renderDeposits();
+}
+
+function openDepositCase(id){
+  alert('Edytowanie kaucji dodamy następnym krokiem.');
+}
+
+function generateDepositFinanceEmail(id){
+  alert('Email do finansów dodamy następnym krokiem.');
 }
 
 
