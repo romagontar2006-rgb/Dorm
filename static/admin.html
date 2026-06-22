@@ -3663,120 +3663,69 @@ if(fromRes){
 }
 
 
-function openEvictionModal(id){
-  const r=residents.find(x=>String(x.id)===String(id));
-  if(!r)return;
+async function evictResident(id){
 
-  const today=new Date().toISOString().split('T')[0];
+  if(!confirm('Wymeldować mieszkańca?')) return;
 
-  document.getElementById('evict-resident-id').value=r.id;
-  document.getElementById('evict-checkout').value=today;
-  document.getElementById('evict-deposit').value=r.deposit || r.kaucja || 850;
-  document.getElementById('evict-deductions').value=0;
-  document.getElementById('evict-deduction-reason').value='';
-  document.getElementById('evict-bank-account').value='';
-  document.getElementById('evict-bank-owner').value=r.full_name || '';
-  document.getElementById('evict-refund').value=document.getElementById('evict-deposit').value;
+  const resident = residents.find(r=>String(r.id)===String(id));
+  if(!resident) return;
 
-  document.getElementById('evict-resident-info').innerHTML=`
-    <b>${r.full_name||''}</b><br>
-    Akademik: ${getDormName(r.dorm_id)}<br>
-    Mieszkanie / sekcja: ${r.floor||''}<br>
-    Pokój: ${r.room||''}<br>
-    Email: ${getResidentEmails(r).join(', ')||'brak'}
-  `;
+  const today = new Date().toISOString().split('T')[0];
 
-  closeModal('modal-resident');
-  document.getElementById('modal-eviction').classList.add('open');
-}
+  // створюємо справу кауції
+  await fetch(`/api/deposits?password=${pwd}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      resident_id:resident.id,
+      full_name:resident.full_name,
 
-function updateEvictionRefund(){
-  const deposit=Number(document.getElementById('evict-deposit').value||0);
-  const deductions=Number(document.getElementById('evict-deductions').value||0);
-  document.getElementById('evict-refund').value=Math.max(0,deposit-deductions);
-}
+      dorm:getDormName(resident.dorm_id),
+      floor:resident.floor,
+      room:resident.room,
 
-['evict-deposit','evict-deductions'].forEach(id=>{
-  setTimeout(()=>{
-    const el=document.getElementById(id);
-    if(el)el.addEventListener('input',updateEvictionRefund);
-  },500);
-});
+      email:getResidentEmails(resident)[0] || '',
 
-async function confirmEvictionProcess(){
-  const id=document.getElementById('evict-resident-id').value;
-  if(!id)return;
+      deposit:resident.deposit || 850,
 
-  if(!confirm('Na pewno przenieść mieszkańca do historii?'))return;
+      deductions:0,
+      refund:resident.deposit || 850,
 
-  const checkout=document.getElementById('evict-checkout').value || new Date().toISOString().split('T')[0];
-  const resident=residents.find(r=>String(r.id)===String(id));
+      room_checked:false,
+      bank_received:false,
+      finance_sent:false,
+      paid:false,
 
-  const deposit=Number(document.getElementById('evict-deposit').value||0);
-  const deductions=Number(document.getElementById('evict-deductions').value||0);
-  const refund=Number(document.getElementById('evict-refund').value||0);
-  const deductionNote=document.getElementById('evict-deduction-reason').value;
-  const bankAccount=document.getElementById('evict-bank-account').value;
-  const bankOwner=document.getElementById('evict-bank-owner').value;
+      checkout:today,
 
-  const notes=[
-    'KAUCJA:',
-    `Kaucja: ${deposit} PLN`,
-    `Potrącenia: ${deductions} PLN`,
-    `Do zwrotu: ${refund} PLN`,
-    `Powód potrącenia: ${deductionNote}`,
-    `Konto: ${bankAccount}`,
-    `Właściciel konta: ${bankOwner}`
-  ].join('\n');
+      status:'do_sprawdzenia'
+    })
+  });
 
-  if(resident){
-    await fetch(`/api/deposits?password=${pwd}`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        resident_id:resident.id,
-        full_name:resident.full_name,
-        dorm:getDormName(resident.dorm_id),
-        floor:resident.floor,
-        room:resident.room,
-        email:getResidentEmails(resident)[0] || '',
-
-        deposit,
-        deductions,
-        refund,
-        deduction_note:deductionNote,
-
-        bank_account:bankAccount,
-        bank_owner:bankOwner,
-
-        checkout,
-        payout_date:'',
-        status:'do_sprawdzenia'
-      })
-    });
-  }
-
+  // виселяємо
   await fetch(`/api/residents/${id}?password=${pwd}`,{
     method:'PATCH',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       status:'evicted',
-      checkout,
-      eviction_notes:notes
+      checkout:today
     })
   });
 
   residents=await fetch(`/api/residents?password=${pwd}`).then(r=>r.json());
-  dorms=await fetch('/api/dorms').then(r=>r.json());
+
   history=await fetch(`/api/history?password=${pwd}`).then(r=>r.json());
 
   if(typeof loadDeposits==='function'){
     await loadDeposits();
   }
 
-  closeModal('modal-eviction');
   renderResidents();
-  renderDashboard();
+  renderHistory();
+
+  if(typeof renderDeposits==='function'){
+    renderDeposits();
+  }
 }
 
 
