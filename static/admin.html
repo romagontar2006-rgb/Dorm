@@ -5120,6 +5120,23 @@ if(gender === 'female' && malesInRoom > 0){
     if(btn) btn.textContent = saved==='dark'?'☀️':'🌙';
   });
 })();
+
+
+function renderDeposits(){
+  const box=document.getElementById('deposits-list');
+
+  if(!box) return;
+
+  box.innerHTML=`
+    <div class="info-card">
+      <h3>💰 Kaucje</h3>
+      <p>Brak spraw kaucji.</p>
+    </div>
+  `;
+}
+
+
+
 </script>
 <!-- МОДАЛКА КАЛЕНДАРЯ ДОГОВОРІВ -->
 <div class="modal" id="modal-contracts">
