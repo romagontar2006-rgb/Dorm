@@ -5186,7 +5186,8 @@ async function renderDeposits(){
             return `
               <tr>
                 <td>#${i+1}</td>
-                <td><b>${d.full_name||'Brak danych'}</b><br>
+                <td>
+                  <b>${d.full_name||'Brak danych'}</b><br>
                   <span style="font-size:11px;color:#777">Wymeldowanie: ${d.checkout||'—'}</span>
                 </td>
                 <td>${d.dorm||'—'}</td>
@@ -5195,22 +5196,13 @@ async function renderDeposits(){
                 <td>${d.deductions||0} PLN</td>
                 <td><b>${refund} PLN</b></td>
                 <td>
-  <span class="deposit-status ${d.status}">
-    ${depositStatusLabel(d.status)}
-  </span>
-</td>
-<button onclick="nextDepositStatus(${d.id})">
-  ➡️
-</button>
-                    <option value="do_sprawdzenia" ${d.status==='do_sprawdzenia'?'selected':''}>Do sprawdzenia</option>
-                    <option value="pokoj_sprawdzony" ${d.status==='pokoj_sprawdzony'?'selected':''}>Pokój sprawdzony</option>
-                    <option value="dane_bankowe" ${d.status==='dane_bankowe'?'selected':''}>Dane bankowe otrzymane</option>
-                    <option value="przekazane" ${d.status==='przekazane'?'selected':''}>Przekazane do finansów</option>
-                    <option value="wyplacone" ${d.status==='wyplacone'?'selected':''}>Wypłacone</option>
-                  </select>
+                  <span class="deposit-status ${d.status||'do_sprawdzenia'}">
+                    ${depositStatusLabel(d.status)}
+                  </span>
                 </td>
                 <td>
                   <div class="btn-group">
+                    <button class="btn btn-light btn-sm" onclick="nextDepositStatus(${d.id})">➡️</button>
                     <button class="btn btn-light btn-sm" onclick="openDepositCase(${d.id})">✏️</button>
                     <button class="btn btn-success btn-sm" onclick="markDepositPaid(${d.id})">✅</button>
                     <button class="btn btn-primary btn-sm" onclick="generateDepositFinanceEmail(${d.id})">📨</button>
@@ -5224,6 +5216,28 @@ async function renderDeposits(){
     </div>
   `;
 }
+
+
+
+async function nextDepositStatus(id){
+  const d=deposits.find(x=>String(x.id)===String(id));
+  if(!d)return;
+
+  const order=[
+    'do_sprawdzenia',
+    'pokoj_sprawdzony',
+    'dane_bankowe',
+    'przekazane',
+    'wyplacone'
+  ];
+
+  const current=d.status || 'do_sprawdzenia';
+  const index=order.indexOf(current);
+  const next=order[Math.min(index+1, order.length-1)];
+
+  await updateDepositStatus(id,next);
+}
+
 
 
 async function updateDepositStatus(id,status){
