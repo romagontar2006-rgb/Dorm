@@ -795,6 +795,12 @@ tr:hover td{background:#fafbff}
   👤 Użytkownicy
 </button>
 
+<button class="sidebar-btn"
+        data-admin-role="true"
+        onclick="showPage('deposits',this)">
+  💰 Kaucje
+</button>
+
 <div class="sidebar-section">AI & EMAIL</div>
       <button class="sidebar-btn" onclick="showPage('email',this)">✉️ <span data-t="menu_email">Asystent Email</span></button>
       <div class="sidebar-section">HISTORIA</div>
@@ -1186,6 +1192,19 @@ tr:hover td{background:#fafbff}
   </div>
 </div>
 
+
+
+<div class="page" id="page-deposits">
+
+  <div class="section-title">
+    💰 Kaucje
+  </div>
+
+  <div id="deposits-list"></div>
+
+</div>
+
+
 <!-- МОДАЛКА: ДОДАТИ/РЕДАГУВАТИ МЕШКАНЦЯ -->
 <div class="modal" id="modal-resident">
   <div class="modal-box" style="width:580px">
@@ -1301,75 +1320,6 @@ tr:hover td{background:#fafbff}
         <option value="not_paid">Brak wpłaty</option>
         <option value="partial">Częściowo</option>
       </select>
-    </div>
-  </div>
-</div>
-
-
-
-<!-- MODAL EVICTION -->
-<div class="modal" id="modal-eviction">
-  <div class="modal-box" style="width:720px">
-    <h3>🚪 Proces wysiedlenia</h3>
-
-    <input type="hidden" id="evict-resident-id">
-
-    <div class="form-card">
-      <h3>👤 Mieszkaniec</h3>
-      <p id="evict-resident-info" style="font-size:13px;color:#64748b;line-height:1.6"></p>
-    </div>
-
-    <div class="form-card">
-      <h3>💰 Kaucja</h3>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Data wyprowadzki</label>
-          <input id="evict-checkout" type="date">
-        </div>
-
-        <div class="form-group">
-          <label>Kaucja</label>
-          <input id="evict-deposit" type="number" oninput="updateEvictionRefund()">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Potrącenia</label>
-          <input id="evict-deductions" type="number" value="0" oninput="updateEvictionRefund()">
-        </div>
-
-        <div class="form-group">
-          <label>Do zwrotu</label>
-          <input id="evict-refund" type="number" readonly>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Powód potrącenia / uwagi</label>
-        <textarea id="evict-deduction-reason" style="height:70px"></textarea>
-      </div>
-    </div>
-
-    <div class="form-card">
-      <h3>🏦 Dane do zwrotu</h3>
-
-      <div class="form-group">
-        <label>Numer konta bankowego</label>
-        <input id="evict-bank-account" placeholder="PL...">
-      </div>
-
-      <div class="form-group">
-        <label>Właściciel konta</label>
-        <input id="evict-bank-owner">
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-light" onclick="closeModal('modal-eviction')">Anuluj</button>
-      <button class="btn btn-light" onclick="generateEvictionFinanceEmail()">📨 Email do finansów</button>
-      <button class="btn btn-danger" onclick="confirmEvictionProcess()">🚪 Przenieś do historii</button>
     </div>
   </div>
 </div>
@@ -1680,12 +1630,12 @@ function canOpenPage(id){
   const permissions={
     super_admin:[
   'dashboard','reservations','residents','tickets','dorms',
-  'finances','history','notifications','email','users','templates'
+  'finances','deposits','history','notifications','email','users','templates'
 ],
 
 admin:[
   'dashboard','reservations','residents','tickets','dorms',
-  'finances','history','notifications','email','templates'
+  'finances','deposits','history','notifications','email','templates'
 ],
 
 pracownik:[
@@ -1704,12 +1654,12 @@ function canOpenPage(id){
   const permissions={
     super_admin:[
   'dashboard','reservations','residents','tickets','dorms',
-  'finances','history','notifications','email','users','templates'
+  'finances','deposits','history','notifications','email','users','templates'
 ],
 
 admin:[
   'dashboard','reservations','residents','tickets','dorms',
-  'finances','history','notifications','email','templates'
+  'finances','deposits','history','notifications','email','templates'
 ],
 
 pracownik:[
@@ -1745,6 +1695,7 @@ function showPage(id,btn){
  tickets:renderTickets,
  dorms:renderDormsAdmin,
  finances:renderFinances,
+ deposits:renderDeposits,
  history:renderHistory,
  notifications:renderNotifications,
  templates:renderTemplates
