@@ -3740,8 +3740,30 @@ async function confirmEvictionProcess(){
   renderDashboard();
 }
 
-function evictResident(id){
-  openEvictionModal(id);
+const resident=residents.find(r=>r.id===id);
+
+if(resident){
+
+  await fetch(`/api/deposits?password=${pwd}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      resident_id:resident.id,
+      full_name:resident.full_name,
+      dorm:getDormName(resident.dorm_id),
+      floor:resident.floor,
+      room:resident.room,
+
+      deposit:resident.deposit || 850,
+      deductions:resident.deposit_deductions || 0,
+      deduction_note:resident.deposit_note || '',
+
+      checkout:today,
+
+      status:'do_sprawdzenia'
+    })
+  });
+
 }
 
 // ── ЗАЯВКИ ──
@@ -5122,17 +5144,68 @@ if(gender === 'female' && malesInRoom > 0){
 })();
 
 
-function renderDeposits(){
+let deposits=[];
+
+async function loadDeposits(){
+  deposits=await fetch(`/api/deposits?password=${pwd}`).then(r=>r.json());
+}
+
+async function renderDeposits(){
+  await loadDeposits();
+
   const box=document.getElementById('deposits-list');
+  if(!box)return;
 
-  if(!box) return;
+  if(!deposits.length){
+    box.innerHTML=`
+      <div class="empty">
+        Brak spraw kaucji.
+      </div>
+    `;
+    return;
+  }
 
-  box.innerHTML=`
-    <div class="info-card">
-      <h3>💰 Kaucje</h3>
-      <p>Brak spraw kaucji.</p>
-    </div>
-  `;
+  box.innerHTML=deposits.map(d=>{
+    const refund=Number(d.deposit||0)-Number(d.deductions||0);
+
+    return `
+      <div class="info-card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+          <div>
+            <h4>💰 ${d.full_name||'Brak danych'}</h4>
+            <p>
+              ${d.dorm||''} / ${d.floor||''} / pokój ${d.room||''}<br>
+              Data wyprowadzki: <b>${d.checkout||'—'}</b>
+            </p>
+
+            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+              <span class="badge">Kaucja: ${d.deposit||0} PLN</span>
+              <span class="badge orange">Potrącenia: ${d.deductions||0} PLN</span>
+              <span class="badge green">Do zwrotu: ${refund} PLN</span>
+              <span class="badge blue">${depositStatusLabel(d.status)}</span>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+            <button class="btn btn-sm btn-light" onclick="openDepositCase(${d.id})">✏️ Edytuj</button>
+            <button class="btn btn-sm btn-primary" onclick="generateDepositFinanceEmail(${d.id})">📨 Email do finansów</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function depositStatusLabel(status){
+  const labels={
+    do_sprawdzenia:'Do sprawdzenia',
+    pokoj_sprawdzony:'Pokój sprawdzony',
+    dane_bankowe:'Dane bankowe otrzymane',
+    przekazane:'Przekazane do finansów',
+    wyplacone:'Wypłacone'
+  };
+
+  return labels[status] || 'Do sprawdzenia';
 }
 
 
