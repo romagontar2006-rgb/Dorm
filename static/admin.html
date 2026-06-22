@@ -3726,6 +3726,8 @@ async function evictResident(id){
   if(typeof renderDeposits==='function'){
     renderDeposits();
   }
+
+  alert('Mieszkaniec został przeniesiony do historii i kaucji.');
 }
 
 
@@ -5173,10 +5175,6 @@ function depositStatusLabel(status){
 }
 
 
-
-function evictResident(id){
-  openEvictionModal(id);
-}
 
 
 
