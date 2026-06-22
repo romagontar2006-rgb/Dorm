@@ -1188,13 +1188,7 @@ tr:hover td{background:#fafbff}
         </div>
       </div>
 
-    </div>
-  </div>
-</div>
-
-
-
-<div class="page" id="page-deposits">
+      <div class="page" id="page-deposits">
 
   <div class="section-title">
     💰 Kaucje
@@ -1203,6 +1197,11 @@ tr:hover td{background:#fafbff}
   <div id="deposits-list"></div>
 
 </div>
+
+    </div>
+  </div>
+</div>
+
 
 
 <!-- МОДАЛКА: ДОДАТИ/РЕДАГУВАТИ МЕШКАНЦЯ -->
@@ -5117,49 +5116,27 @@ async function loadDeposits(){
 }
 
 async function renderDeposits(){
-  await loadDeposits();
-
   const box=document.getElementById('deposits-list');
-  if(!box)return;
-
-  if(!deposits.length){
-    box.innerHTML=`
-      <div class="empty">
-        Brak spraw kaucji.
-      </div>
-    `;
+  if(!box){
+    alert('Nie znaleziono deposits-list');
     return;
   }
 
-  box.innerHTML=deposits.map(d=>{
-    const refund=Number(d.deposit||0)-Number(d.deductions||0);
+  await loadDeposits();
 
-    return `
-      <div class="info-card" style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
-          <div>
-            <h4>💰 ${d.full_name||'Brak danych'}</h4>
-            <p>
-              ${d.dorm||''} / ${d.floor||''} / pokój ${d.room||''}<br>
-              Data wyprowadzki: <b>${d.checkout||'—'}</b>
-            </p>
+  if(!deposits || !deposits.length){
+    box.innerHTML='<div class="empty">Brak spraw kaucji.</div>';
+    return;
+  }
 
-            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-              <span class="badge">Kaucja: ${d.deposit||0} PLN</span>
-              <span class="badge orange">Potrącenia: ${d.deductions||0} PLN</span>
-              <span class="badge green">Do zwrotu: ${refund} PLN</span>
-              <span class="badge blue">${depositStatusLabel(d.status)}</span>
-            </div>
-          </div>
-
-          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-            <button class="btn btn-sm btn-light" onclick="openDepositCase(${d.id})">✏️ Edytuj</button>
-            <button class="btn btn-sm btn-primary" onclick="generateDepositFinanceEmail(${d.id})">📨 Email do finansów</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
+  box.innerHTML=deposits.map(d=>`
+    <div class="info-card">
+      <h4>💰 ${d.full_name||'Brak danych'}</h4>
+      <p>${d.dorm||''} / ${d.floor||''} / pokój ${d.room||''}</p>
+      <p>Kaucja: ${d.deposit||0} PLN | Do zwrotu: ${d.refund||0} PLN</p>
+      <p>Status: ${depositStatusLabel(d.status)}</p>
+    </div>
+  `).join('');
 }
 
 function depositStatusLabel(status){
