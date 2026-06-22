@@ -545,3 +545,29 @@ def delete_template(template_id):
     )
 
 
+
+def get_deposits():
+    return _load("deposits")
+
+
+def add_deposit_case(data):
+    items = get_deposits()
+    data["id"] = len(items) + 1
+    data["created"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    items.append(data)
+    _save("deposits", items)
+    return data["id"]
+
+
+def update_deposit_case(case_id, fields):
+    items = get_deposits()
+    for item in items:
+        if int(item["id"]) == int(case_id):
+            item.update(fields)
+    _save("deposits", items)
+
+
+def delete_deposit_case(case_id):
+    items = get_deposits()
+    items = [item for item in items if int(item["id"]) != int(case_id)]
+    _save("deposits", items)

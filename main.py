@@ -478,6 +478,37 @@ async def remove_user(user_id: int, password: str = ""):
 
 
 
+
+# ── KAUCJE ──
+
+@app.get("/api/deposits")
+async def list_deposits(password: str = ""):
+    check_admin(password)
+    return db.get_deposits()
+
+
+@app.post("/api/deposits")
+async def create_deposit_case(data: dict, password: str = ""):
+    check_admin(password)
+    cid = db.add_deposit_case(data)
+    return {"id": cid}
+
+
+@app.patch("/api/deposits/{case_id}")
+async def patch_deposit_case(case_id: int, data: dict, password: str = ""):
+    check_admin(password)
+    db.update_deposit_case(case_id, data)
+    return {"ok": True}
+
+
+@app.delete("/api/deposits/{case_id}")
+async def delete_deposit_case(case_id: int, password: str = ""):
+    check_admin(password)
+    db.delete_deposit_case(case_id)
+    return {"ok": True}
+
+
+
 # ── CHAT ──
 @app.post("/api/chat")
 async def chat(msg: ChatMsg):
