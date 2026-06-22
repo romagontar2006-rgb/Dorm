@@ -5218,6 +5218,20 @@ async function renderDeposits(){
 }
 
 
+function depositStatusLabel(status){
+
+  const labels = {
+    do_sprawdzenia: 'Do sprawdzenia',
+    pokoj_sprawdzony: 'Pokój sprawdzony',
+    dane_bankowe: 'Dane bankowe otrzymane',
+    przekazane: 'Przekazane do finansów',
+    wyplacone: 'Wypłacone'
+  };
+
+  return labels[status] || 'Do sprawdzenia';
+}
+
+
 
 async function nextDepositStatus(id){
   const d=deposits.find(x=>String(x.id)===String(id));
