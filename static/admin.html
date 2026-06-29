@@ -1306,6 +1306,36 @@ tr:hover td{background:#fafbff}
   <div class="section-title">
     💰 Kaucje
   </div>
+  
+  <div class="info-card" style="margin-bottom:18px">
+
+  <h4>⚙️ Ustawienia</h4>
+
+  <div class="form-grid-2">
+
+    <div>
+
+      <label>Szablon emaila do finansów</label>
+
+      <select id="deposit-finance-template"></select>
+
+    </div>
+
+    <div style="display:flex;align-items:flex-end">
+
+      <button
+        class="btn btn-primary"
+        onclick="saveDepositSettings()">
+
+        💾 Zapamiętaj
+
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
 
   <div id="deposits-list"></div>
 
@@ -1385,6 +1415,29 @@ tr:hover td{background:#fafbff}
       <button class="btn btn-primary" onclick="saveDepositCase()">✓ Zapisz</button>
     </div>
   </div>
+</div>
+
+
+
+<div class="modal" id="modal-template-help">
+
+  <div class="modal-content" style="max-width:820px">
+
+    <h2>📚 Dostępne zmienne</h2>
+
+    <div id="template-help-content"></div>
+
+    <div class="modal-footer">
+
+      <button class="btn btn-primary"
+              onclick="closeModal('modal-template-help')">
+        Zamknij
+      </button>
+
+    </div>
+
+  </div>
+
 </div>
 
 
@@ -2296,6 +2349,9 @@ async function renderTemplates(){
   const box=document.getElementById('templates-list');
   if(!box)return;
 
+  await loadTemplates();
+fillDepositFinanceTemplateSelect();
+
   if(!templates.length){
     box.innerHTML='<div class="empty">Brak szablonów</div>';
     return;
@@ -2325,6 +2381,7 @@ async function renderTemplates(){
 function openAddTemplate(){
   document.getElementById('tpl-id').value='';
   document.getElementById('tpl-name').value='';
+  document.getElementById('tpl-type').value='general';
   document.getElementById('tpl-language').value='pl';
   document.getElementById('tpl-active').value='true';
   document.getElementById('tpl-subject').value='';
@@ -2337,25 +2394,38 @@ function openEditTemplate(id){
   if(!t)return;
 
   document.getElementById('tpl-id').value=t.id;
-  document.getElementById('tpl-name').value=t.name||'';
-  document.getElementById('tpl-language').value=t.language||'pl';
-  document.getElementById('tpl-active').value=String(t.active!==false);
-  document.getElementById('tpl-subject').value=t.subject||'';
-  document.getElementById('tpl-body').value=t.body||'';
-  document.getElementById('modal-template').classList.add('open');
+
+document.getElementById('tpl-name').value=t.name||'';
+
+document.getElementById('tpl-type').value=t.type||'general';
+
+document.getElementById('tpl-language').value=t.language||'pl';
+
+document.getElementById('tpl-active').value=String(t.active!==false);
+
+document.getElementById('tpl-subject').value=t.subject||'';
+
+document.getElementById('tpl-body').value=t.body||'';
 }
 
 async function saveTemplate(){
   const id=document.getElementById('tpl-id').value;
 
-  const payload={
-    name:document.getElementById('tpl-name').value.trim(),
-    type:'email',
-    language:document.getElementById('tpl-language').value,
-    subject:document.getElementById('tpl-subject').value.trim(),
-    body:document.getElementById('tpl-body').value,
-    active:document.getElementById('tpl-active').value==='true'
-  };
+ const payload={
+
+  name:document.getElementById('tpl-name').value.trim(),
+
+  type:document.getElementById('tpl-type').value,
+
+  language:document.getElementById('tpl-language').value,
+
+  subject:document.getElementById('tpl-subject').value.trim(),
+
+  body:document.getElementById('tpl-body').value,
+
+  active:document.getElementById('tpl-active').value==='true'
+
+};
 
   if(!payload.name || !payload.body){
     alert('Uzupełnij nazwę i treść szablonu.');
@@ -3661,7 +3731,87 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 
 
 function openTemplateHelp(){
+  const groups = [
+    {
+      title:'👤 Dane mieszkańca',
+      items:[
+        ['{formal_greeting}','Szanowny Panie / Szanowna Pani'],
+        ['{title}','Pan / Pani'],
+        ['{first_name}','Imię'],
+        ['{last_name}','Nazwisko'],
+        ['{full_name}','Imię i nazwisko'],
+        ['{email}','Email mieszkańca']
+      ]
+    },
+    {
+      title:'🏠 Zakwaterowanie',
+      items:[
+        ['{dorm}','Akademik'],
+        ['{floor}','Mieszkanie / sekcja'],
+        ['{room}','Pokój'],
+        ['{checkin}','Data zameldowania'],
+        ['{checkout}','Data wymeldowania'],
+        ['{contract_end}','Data końca umowy']
+      ]
+    },
+    {
+      title:'💰 Kaucje',
+      items:[
+        ['{deposit}','Kwota kaucji'],
+        ['{deductions}','Potrącenia'],
+        ['{refund}','Kwota do zwrotu'],
+        ['{bank_account}','Numer konta'],
+        ['{bank_owner}','Właściciel konta'],
+        ['{payout_date}','Data wypłaty'],
+        ['{status}','Status sprawy']
+      ]
+    },
+    {
+      title:'📧 System',
+      items:[
+        ['{today}','Dzisiejsza data'],
+        ['{year}','Aktualny rok']
+      ]
+    }
+  ];
+
+  document.getElementById('template-help-content').innerHTML =
+    groups.map(g=>`
+      <div class="form-card">
+        <h3>${g.title}</h3>
+        ${g.items.map(([key,desc])=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e5e7eb;padding:8px 0">
+            <div>
+              <b>${key}</b>
+              <div style="font-size:12px;color:#64748b">${desc}</div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-light btn-sm" onclick="copyText('${key}')">📋</button>
+              <button class="btn btn-primary btn-sm" onclick="insertTemplateVariable('${key}')">➕</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+
   document.getElementById('modal-template-help').classList.add('open');
+}
+
+
+
+function insertTemplateVariable(variable){
+  const textarea = document.getElementById('tpl-body');
+  if(!textarea)return;
+
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+
+  textarea.value = text.substring(0,start) + variable + text.substring(end);
+  textarea.focus();
+
+  const newPos = start + variable.length;
+  textarea.setSelectionRange(newPos,newPos);
 }
 
 
@@ -5367,6 +5517,41 @@ async function renderDeposits(){
 
 
 
+function fillDepositFinanceTemplateSelect(){
+  const select=document.getElementById('deposit-finance-template');
+  if(!select)return;
+
+  const saved=localStorage.getItem('depositFinanceTemplateId') || '';
+
+  const financeTemplates=templates.filter(t=>
+    t.active!==false && (t.type==='finance' || t.type==='deposit')
+  );
+
+  select.innerHTML='<option value="">— wybierz szablon —</option>';
+
+  financeTemplates.forEach(t=>{
+    select.innerHTML+=`
+      <option value="${t.id}" ${String(t.id)===String(saved)?'selected':''}>
+        ${t.name}
+      </option>
+    `;
+  });
+}
+
+function saveDepositSettings(){
+  const value=document.getElementById('deposit-finance-template').value;
+
+  if(!value){
+    alert('Wybierz szablon.');
+    return;
+  }
+
+  localStorage.setItem('depositFinanceTemplateId',value);
+  alert('Zapisano domyślny szablon do finansów.');
+}
+
+
+
 function openDepositCase(id){
 
   const d = deposits.find(x=>String(x.id)===String(id));
@@ -5718,6 +5903,26 @@ async function markDepositPaid(id){
       <label>NAZWA SZABLONU</label>
       <input id="tpl-name" placeholder="np. Przypomnienie o płatności">
 
+
+      <div class="form-group">
+  <label>Typ szablonu</label>
+
+  <select id="tpl-type">
+
+    <option value="general">Ogólne</option>
+
+    <option value="notification">Powiadomienia</option>
+
+    <option value="deposit">Kaucje</option>
+
+    <option value="finance">Finanse</option>
+
+    <option value="contract">Umowy</option>
+
+  </select>
+
+</div>
+
       <div class="form-grid-2">
         <div>
           <label>JĘZYK</label>
@@ -5743,9 +5948,25 @@ async function markDepositPaid(id){
       <label>TREŚĆ WIADOMOŚCI</label>
       <textarea id="tpl-body" rows="9" placeholder="Dzień dobry {title} {last_name}, ..."></textarea>
 
-      <div style="font-size:12px;color:#64748b;margin-top:8px">
-        Zmienne: {title}, {first_name}, {last_name}, {full_name}, {dorm}, {room}, {contract_end}, {email}
-      </div>
+      <div class="template-help-box">
+
+  <div style="display:flex;justify-content:space-between;align-items:center">
+
+    <b>📚 Dostępne zmienne</b>
+
+    <button
+      class="btn btn-light btn-sm"
+      onclick="openTemplateHelp()">
+      ❔ Pokaż
+    </button>
+
+  </div>
+
+  <div style="margin-top:8px;font-size:12px;color:#666">
+    Kliknij "Pokaż", aby zobaczyć wszystkie dostępne zmienne.
+  </div>
+
+</div>
     </div>
 
     <div class="modal-footer">
