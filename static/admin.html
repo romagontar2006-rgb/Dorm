@@ -1225,6 +1225,79 @@ tr:hover td{background:#fafbff}
         </div>
       </div>
 
+
+
+<!-- MODAL DEPOSIT CASE -->
+<div class="modal" id="modal-deposit">
+  <div class="modal-box" style="width:620px">
+    <h3>💰 Edytuj kaucję</h3>
+
+    <input type="hidden" id="dep-id">
+
+    <div class="form-group">
+      <label>Imię i nazwisko</label>
+      <input id="dep-full-name" readonly>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Kaucja</label>
+        <input type="number" id="dep-deposit" oninput="updateDepositRefundPreview()">
+      </div>
+
+      <div class="form-group">
+        <label>Potrącenia</label>
+        <input type="number" id="dep-deductions" oninput="updateDepositRefundPreview()">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Powód potrącenia / uwagi</label>
+      <textarea id="dep-deduction-note" style="height:70px"></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Do zwrotu</label>
+        <input type="number" id="dep-refund" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Status</label>
+        <select id="dep-status">
+          <option value="do_sprawdzenia">Do sprawdzenia</option>
+          <option value="pokoj_sprawdzony">Pokój sprawdzony</option>
+          <option value="dane_bankowe">Dane bankowe otrzymane</option>
+          <option value="przekazane">Przekazane do finansów</option>
+          <option value="wyplacone">Wypłacone</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Numer konta bankowego</label>
+      <input id="dep-bank-account" placeholder="PL...">
+    </div>
+
+    <div class="form-group">
+      <label>Właściciel konta</label>
+      <input id="dep-bank-owner">
+    </div>
+
+    <div class="form-group">
+      <label>Data wypłaty</label>
+      <input type="date" id="dep-payout-date">
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('modal-deposit')">Anuluj</button>
+      <button class="btn btn-primary" onclick="saveDepositCase()">✓ Zapisz</button>
+    </div>
+  </div>
+</div>
+
+
+
       <div class="page" id="page-deposits">
 
   <div class="section-title">
@@ -1235,6 +1308,78 @@ tr:hover td{background:#fafbff}
 
 </div>
 
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- MODAL DEPOSIT CASE -->
+<div class="modal" id="modal-deposit">
+  <div class="modal-box" style="width:620px">
+    <h3>💰 Edytuj kaucję</h3>
+
+    <input type="hidden" id="dep-id">
+
+    <div class="form-group">
+      <label>Imię i nazwisko</label>
+      <input id="dep-full-name" readonly>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Kaucja</label>
+        <input type="number" id="dep-deposit" oninput="updateDepositRefundPreview()">
+      </div>
+
+      <div class="form-group">
+        <label>Potrącenia</label>
+        <input type="number" id="dep-deductions" oninput="updateDepositRefundPreview()">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Powód potrącenia / uwagi</label>
+      <textarea id="dep-deduction-note" style="height:70px"></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Do zwrotu</label>
+        <input type="number" id="dep-refund" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Status</label>
+        <select id="dep-status">
+          <option value="do_sprawdzenia">Do sprawdzenia</option>
+          <option value="pokoj_sprawdzony">Pokój sprawdzony</option>
+          <option value="dane_bankowe">Dane bankowe otrzymane</option>
+          <option value="przekazane">Przekazane do finansów</option>
+          <option value="wyplacone">Wypłacone</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Numer konta bankowego</label>
+      <input id="dep-bank-account" placeholder="PL...">
+    </div>
+
+    <div class="form-group">
+      <label>Właściciel konta</label>
+      <input id="dep-bank-owner">
+    </div>
+
+    <div class="form-group">
+      <label>Data wypłaty</label>
+      <input type="date" id="dep-payout-date">
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-light" onclick="closeModal('modal-deposit')">Anuluj</button>
+      <button class="btn btn-primary" onclick="saveDepositCase()">✓ Zapisz</button>
     </div>
   </div>
 </div>
@@ -5216,6 +5361,85 @@ async function renderDeposits(){
     </div>
   `;
 }
+
+
+
+function openDepositCase(id){
+
+  const d = deposits.find(x=>String(x.id)===String(id));
+  if(!d) return;
+
+  document.getElementById('dep-id').value=d.id;
+  document.getElementById('dep-full-name').value=d.full_name||'';
+
+  document.getElementById('dep-deposit').value=d.deposit||0;
+  document.getElementById('dep-deductions').value=d.deductions||0;
+  document.getElementById('dep-refund').value=d.refund||0;
+
+  document.getElementById('dep-deduction-note').value=d.deduction_note||'';
+
+  document.getElementById('dep-bank-account').value=d.bank_account||'';
+  document.getElementById('dep-bank-owner').value=d.bank_owner||'';
+
+  document.getElementById('dep-status').value=d.status||'do_sprawdzenia';
+
+  document.getElementById('dep-payout-date').value=d.payout_date||'';
+
+  document.getElementById('modal-deposit').classList.add('open');
+
+}
+
+
+
+function updateDepositRefundPreview(){
+
+  const deposit=Number(document.getElementById('dep-deposit').value||0);
+  const deductions=Number(document.getElementById('dep-deductions').value||0);
+
+  document.getElementById('dep-refund').value=Math.max(0,deposit-deductions);
+
+}
+
+
+
+async function saveDepositCase(){
+
+  const id=document.getElementById('dep-id').value;
+
+  const payload={
+
+    deposit:Number(document.getElementById('dep-deposit').value||0),
+
+    deductions:Number(document.getElementById('dep-deductions').value||0),
+
+    refund:Number(document.getElementById('dep-refund').value||0),
+
+    deduction_note:document.getElementById('dep-deduction-note').value,
+
+    bank_account:document.getElementById('dep-bank-account').value,
+
+    bank_owner:document.getElementById('dep-bank-owner').value,
+
+    payout_date:document.getElementById('dep-payout-date').value,
+
+    status:document.getElementById('dep-status').value
+
+  };
+
+  await fetch(`/api/deposits/${id}?password=${pwd}`,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+  });
+
+  await loadDeposits();
+
+  renderDeposits();
+
+  closeModal('modal-deposit');
+
+}
+
 
 
 function depositStatusLabel(status){
