@@ -1291,6 +1291,9 @@ tr:hover td{background:#fafbff}
 
     <div class="modal-footer">
       <button class="btn btn-light" onclick="closeModal('modal-deposit')">Anuluj</button>
+      <button class="btn btn-light" onclick="generateDepositFinanceEmailFromModal()">
+  📨 Wyślij do finansów
+</button>
       <button class="btn btn-primary" onclick="saveDepositCase()">✓ Zapisz</button>
     </div>
   </div>
@@ -5442,6 +5445,47 @@ async function saveDepositCase(){
 
 
 
+async function generateDepositFinanceEmailFromModal(){
+  await loadTemplates();
+
+  const id=document.getElementById('dep-id').value;
+  const d=deposits.find(x=>String(x.id)===String(id));
+  if(!d)return;
+
+  const template=templates.find(t=>
+    (t.name||'').toLowerCase().includes('zwrot kaucji')
+  );
+
+  if(!template){
+    alert('Nie znaleziono szablonu: Zwrot kaucji');
+    return;
+  }
+
+  const vars={
+    full_name:document.getElementById('dep-full-name').value,
+    dorm:d.dorm||'',
+    room:d.room||'',
+    deposit:document.getElementById('dep-deposit').value,
+    deductions:document.getElementById('dep-deductions').value,
+    refund:document.getElementById('dep-refund').value,
+    bank_account:document.getElementById('dep-bank-account').value,
+    bank_owner:document.getElementById('dep-bank-owner').value,
+    checkout:d.checkout||''
+  };
+
+  let subject=template.subject||'Zwrot kaucji';
+  let body=template.body||'';
+
+  Object.entries(vars).forEach(([k,v])=>{
+    subject=subject.replaceAll(`{${k}}`,v);
+    body=body.replaceAll(`{${k}}`,v);
+  });
+
+  window.location.href=`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+
+
 function depositStatusLabel(status){
 
   const labels = {
@@ -5502,11 +5546,6 @@ async function markDepositPaid(id){
   });
 
   await renderDeposits();
-}
-
-
-function generateDepositFinanceEmail(id){
-  alert('Email do finansów dodamy następnym krokiem.');
 }
 
 
