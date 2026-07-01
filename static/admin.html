@@ -2617,6 +2617,12 @@ const solvedTickets=tickets.filter(t=>
   t.status==='done' || 
   t.status==='resolved'
 ).length;
+const depositDoSprawdzenia = deposits.filter(d=>d.status==='do_sprawdzenia').length;
+const depositDaneBankowe = deposits.filter(d=>d.status==='dane_bankowe').length;
+const depositPrzekazane = deposits.filter(d=>d.status==='przekazane').length;
+const depositOczekujaPoFinansach = deposits.filter(d=>
+  d.finance_sent_date && d.status !== 'wyplacone'
+).length;
   const todayCount=calendarNotes.filter(n=>n.date===isoDate(warsawNow())&&!n.done).length;
 
   document.getElementById('stats').innerHTML=`
@@ -2665,6 +2671,34 @@ const solvedTickets=tickets.filter(t=>
 
     <div style="margin-top:14px;font-size:12px;color:#64748b">
       Wszystkie zgłoszenia: <b>${tickets.length}</b>
+    </div>
+  </div>
+
+  <div class="modern-card" style="margin-top:14px">
+    <div class="modern-card-title">💰 Kaucje</div>
+
+    <div class="kpi-row">
+      <div class="kpi-mini">
+        <div class="kpi-mini-num" style="color:#dc2626">${depositDoSprawdzenia}</div>
+        <div class="kpi-mini-label">Do sprawdzenia</div>
+      </div>
+
+      <div class="kpi-mini">
+        <div class="kpi-mini-num" style="color:#1d4ed8">${depositDaneBankowe}</div>
+        <div class="kpi-mini-label">Dane bankowe</div>
+      </div>
+    </div>
+
+    <div class="kpi-row" style="margin-top:12px">
+      <div class="kpi-mini">
+        <div class="kpi-mini-num" style="color:#6d28d9">${depositPrzekazane}</div>
+        <div class="kpi-mini-label">Przekazane do finansów</div>
+      </div>
+
+      <div class="kpi-mini">
+        <div class="kpi-mini-num" style="color:#b45309">${depositOczekujaPoFinansach}</div>
+        <div class="kpi-mini-label">Po zgłoszeniu</div>
+      </div>
     </div>
   </div>
 
