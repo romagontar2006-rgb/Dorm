@@ -5455,6 +5455,9 @@ async function renderDeposits(){
   const box=document.getElementById('deposits-list');
   if(!box)return;
 
+  await loadTemplates();
+  fillDepositFinanceTemplateSelect();
+
   await loadDeposits();
 
   if(!deposits || !deposits.length){
@@ -5524,16 +5527,12 @@ function fillDepositFinanceTemplateSelect(){
 
   const saved=localStorage.getItem('depositFinanceTemplateId') || '';
 
-  const financeTemplates =
-    templates.filter(t => t.active !== false);
-    console.log(financeTemplates);
-
   select.innerHTML='<option value="">— wybierz szablon —</option>';
 
-  financeTemplates.forEach(t=>{
+  templates.forEach(t=>{
     select.innerHTML+=`
       <option value="${t.id}" ${String(t.id)===String(saved)?'selected':''}>
-        ${t.name}
+        ${t.name || 'Bez nazwy'}
       </option>
     `;
   });
