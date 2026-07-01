@@ -5507,7 +5507,7 @@ async function renderDeposits(){
                     <button class="btn btn-light btn-sm" onclick="nextDepositStatus(${d.id})">➡️</button>
                     <button class="btn btn-light btn-sm" onclick="openDepositCase(${d.id})">✏️</button>
                     <button class="btn btn-success btn-sm" onclick="markDepositPaid(${d.id})">✅</button>
-                    <button class="btn btn-primary btn-sm" onclick="openDepositCase(${d.id})">📨</button>
+                    <button class="btn btn-primary btn-sm" onclick="generateDepositFinanceEmail(${d.id})">📨</button>
                   </div>
                 </td>
               </tr>
@@ -5694,6 +5694,62 @@ if(!template){
   });
 
   window.location.href=`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+
+
+async function generateDepositFinanceEmail(id){
+  await loadTemplates();
+  
+
+  const d=deposits.find(x=>String(x.id)===String(id));
+  if(!d)return;
+
+  const templateId=localStorage.getItem('depositFinanceTemplateId');
+
+  if(!templateId){
+    alert('Najpierw wybierz i zapamiętaj szablon emaila do finansów w sekcji Kaucje.');
+    return;
+  }
+
+  const template=templates.find(t=>String(t.id)===String(templateId));
+
+  if(!template){
+    alert('Wybrany szablon nie istnieje.');
+    return;
+  }
+
+  const fullName=d.full_name||'';
+
+  const vars={
+    full_name:fullName,
+    first_name:fullName.split(' ')[0]||'',
+    last_name:fullName.split(' ').slice(1).join(' ')||'',
+    dorm:d.dorm||'',
+    floor:d.floor||'',
+    room:d.room||'',
+    deposit:d.deposit||'',
+    deductions:d.deductions||0,
+    refund:d.refund ?? (Number(d.deposit||0)-Number(d.deductions||0)),
+    bank_account:d.bank_account||'',
+    bank_owner:d.bank_owner||'',
+    checkout:d.checkout||'',
+    payout_date:d.payout_date||'',
+    status:depositStatusLabel(d.status),
+    today:new Date().toLocaleDateString(),
+    year:new Date().getFullYear()
+  };
+
+  let subject=template.subject||'Zwrot kaucji';
+  let body=template.body||'';
+
+  Object.entries(vars).forEach(([k,v])=>{
+    subject=subject.replaceAll(`{${k}}`,v);
+    body=body.replaceAll(`{${k}}`,v);
+  });
+
+  window.location.href=
+    `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 
