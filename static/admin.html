@@ -2341,6 +2341,7 @@ let templates=[];
 
 async function loadTemplates(){
   templates=await fetch('/api/templates').then(r=>r.json());
+  console.log("TEMPLATES:", templates);
 }
 
 async function renderTemplates(){
@@ -5525,6 +5526,7 @@ function fillDepositFinanceTemplateSelect(){
 
   const financeTemplates =
     templates.filter(t => t.active !== false);
+    console.log(financeTemplates);
 
   select.innerHTML='<option value="">— wybierz szablon —</option>';
 
