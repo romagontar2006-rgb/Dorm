@@ -5523,9 +5523,8 @@ function fillDepositFinanceTemplateSelect(){
 
   const saved=localStorage.getItem('depositFinanceTemplateId') || '';
 
-  const financeTemplates=templates.filter(t=>
-    t.active!==false && (t.type==='finance' || t.type==='deposit')
-  );
+  const financeTemplates =
+    templates.filter(t => t.active !== false);
 
   select.innerHTML='<option value="">— wybierz szablon —</option>';
 
