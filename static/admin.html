@@ -5637,26 +5637,53 @@ async function generateDepositFinanceEmailFromModal(){
   const d=deposits.find(x=>String(x.id)===String(id));
   if(!d)return;
 
-  const template=templates.find(t=>
-    (t.name||'').toLowerCase().includes('zwrot kaucji')
-  );
+  const templateId = localStorage.getItem('depositFinanceTemplateId');
 
-  if(!template){
-    alert('Nie znaleziono szablonu: Zwrot kaucji');
-    return;
-  }
+if(!templateId){
+  alert('Najpierw wybierz domyślny szablon w sekcji Kaucje.');
+  return;
+}
+
+const template = templates.find(t => String(t.id) === String(templateId));
+
+if(!template){
+  alert('Wybrany szablon nie istnieje.');
+  return;
+}
 
   const vars={
+
     full_name:document.getElementById('dep-full-name').value,
+
+    first_name:(document.getElementById('dep-full-name').value||'').split(' ')[0],
+
+    last_name:(document.getElementById('dep-full-name').value||'').split(' ').slice(1).join(' '),
+
     dorm:d.dorm||'',
+
+    floor:d.floor||'',
+
     room:d.room||'',
+
     deposit:document.getElementById('dep-deposit').value,
+
     deductions:document.getElementById('dep-deductions').value,
+
     refund:document.getElementById('dep-refund').value,
+
     bank_account:document.getElementById('dep-bank-account').value,
+
     bank_owner:document.getElementById('dep-bank-owner').value,
-    checkout:d.checkout||''
-  };
+
+    checkout:d.checkout||'',
+
+    status:depositStatusLabel(d.status),
+
+    today:new Date().toLocaleDateString(),
+
+    year:new Date().getFullYear()
+
+};
 
   let subject=template.subject||'Zwrot kaucji';
   let body=template.body||'';
