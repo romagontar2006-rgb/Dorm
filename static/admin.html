@@ -5748,6 +5748,19 @@ async function generateDepositFinanceEmail(id){
     body=body.replaceAll(`{${k}}`,v);
   });
 
+  const todayIso=new Date().toISOString().split('T')[0];
+
+await fetch(`/api/deposits/${id}?password=${pwd}`,{
+  method:'PATCH',
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({
+    finance_sent_date:todayIso
+  })
+});
+
+await loadDeposits();
+renderDeposits();
+
   window.location.href=
     `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
